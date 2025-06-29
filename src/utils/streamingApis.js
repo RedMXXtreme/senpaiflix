@@ -180,7 +180,7 @@ export function get2AnimeEmbedUrl3(animeName, episodeNumber) {
 export async function fetchEmbedIdFromAnimegg(episodeUrl) {
   try {
     // Fetch the episode URL via the new backend server to bypass CORS
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://corsproxy.io/?key=8d61e214&url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -218,7 +218,7 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
   try {
     const episodeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
     console.log("Fetching AnimeWorld iframe URL from:", episodeUrl);
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://corsproxy.io/?key=8d61e214&url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
