@@ -3,13 +3,13 @@ import SearchBar from "./SearchBar";
 
 const FrontPage = () => {
   return (
-    <div className="bg-[#0e0e10] text-white min-h-screen flex flex-col items-center justify-start px-4 md:pt-16" style={{ fontFamily: "Poppins, sans-serif" , paddingTop: "9rem" }}>
+    <div className="text-white min-h-screen flex flex-col items-center justify-start px-4 md:pt-16" style={{ fontFamily: "Poppins, sans-serif" , paddingTop: "9rem" }}>
       {/* Header Section */}
       <div className="relative w-full max-w-6xl rounded-2xl overflow-hidden text-center">
         {/* Background */}
-        <div className="absolute inset-0 z-0 grid grid-cols-6 gap-0 h-full opacity-80">
+        <div className="absolute inset-0 z-0 grid grid-cols-6 gap-0 h-full">
           <video
-            src="https://v1.pinimg.com/videos/iht/expMp4/v2/69/94/7e/69947e2de0162d7c4d5f81aa454dc7c6_720w.mp4"
+            src="https://v1.pinimg.com/videos/mc/720p/f6/3b/b8/f63bb8d17fe2c624412287df221a076b.mp4"
             type="video/mp4"
             className="col-span-6 w-full h-full object-cover"
             autoPlay
