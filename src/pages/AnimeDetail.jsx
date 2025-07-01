@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Loader from '../components/Loader';
-import { fetchAnimeVideos } from '../utils/api';
-
 import {
   FaPlay,
   FaMicrophone,
@@ -53,6 +51,7 @@ const AnimeDetail = () => {
   const [anime, setAnime] = useState(null);
   const [descExpanded, setDescExpanded] = useState(false);
   const [promoVideoUrl, setPromoVideoUrl] = useState(null);
+  const [promoVideos, setPromoVideos] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -105,29 +104,27 @@ const AnimeDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    const fetchPromoVideo = async () => {
-      try {
-        const videosData = await fetchAnimeVideos(id);
-        // The API response structure for videos is { promo: [...], episodes: [...], music_videos: [...] }
-        // Each promo item has a trailer object with url and embed_url
-        if (videosData && videosData.promo && videosData.promo.length > 0) {
-          // Use the first promo trailer embed_url for iframe embed
-          setPromoVideoUrl(videosData.promo[0].trailer.embed_url);
-        } else if (videosData && videosData.promo && videosData.promo.length === 0 && videosData.trailer) {
-          // fallback to trailer embed_url if promo not available
-          setPromoVideoUrl(videosData.trailer.embed_url);
-        } else {
-          setPromoVideoUrl(null);
-        }
-      } catch (error) {
-        console.error("Error fetching promo video:", error);
-        setPromoVideoUrl(null);
-      }
-    };
-
-    fetchPromoVideo();
+    // Fetch promo videos when id changes
+    if (id) {
+      fetchPromoVideos();
+    }
   }, [id]);
 
+  const fetchPromoVideos = async () => {
+    try {
+      const response = await axios.get(`https://api.jikan.moe/v4/anime/${id}/videos`);
+      const promoVideos = response.data.data.promo;
+      if (promoVideos && promoVideos.length > 0) {
+        setPromoVideos(promoVideos);
+      } else {
+        console.log("No promo videos available.");
+      }
+    } catch (error) {
+      console.error("Error fetching promo videos:", error);
+    }
+  };
+
+ 
   if (!anime) return <div className="p-4 text-white"><Loader /></div>;
 
   const badges = [
@@ -164,7 +161,7 @@ const AnimeDetail = () => {
             alt={anime.title}
             className="rounded-xl shadow-lg w-full"
           />
-          <div className="bg-black text-pink-400 w-full text-center py-2 rounded-b-xl font-semibold text-sm">
+          <div className="bg-black text-pink-400 w-full text-center py-2 rounded-b-xl font-semibold text-sm mt-2">
             <FaMicrophone className="inline mr-1" />
             Watch2gether
           </div>
@@ -296,72 +293,71 @@ const AnimeDetail = () => {
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {promoVideoUrl && (
-          <>
-            <img
-              src={anime.coverImage}
-              alt="Promo Video Thumbnail"
-              className="cursor-pointer rounded-lg shadow-lg w-full max-h-[480px] object-cover"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-            />
-            {isModalOpen && (
-              <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-                <div className="modal-content" onClick={e => e.stopPropagation()}>
-                  <button className="modal-close" onClick={() => setIsModalOpen(false)}>
-                    &times;
-                  </button>
-                  <iframe
-                    src={promoVideoUrl}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-[480px]"
-                  ></iframe>
-                </div>
-              </div>
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Trailers</h2>
+            {promoVideos.length === 0 && (
+              <p className="text-gray-400">No promo videos available.</p>
             )}
-          </>
-        )}
-      </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {promoVideos.map((promo, index) => (
+                <div
+                  key={index}
+                  className="relative cursor-pointer rounded-lg overflow-hidden shadow-lg"
+                  onClick={() => {
+                    setPromoVideoUrl(promo.trailer.embed_url);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <img
+                    src={promo.trailer.images.maximum_image_url}
+                    alt={`Trailer ${index + 1}`}
+                    className="w-full h-auto object-cover rounded-lg"
+                    style={{ aspectRatio: "16/9" }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+                    <FaPlay className="text-white text-3xl sm:text-4xl md:text-5xl" />
+                  </div>
+                  <div className="absolute bottom-2 left-2 text-white text-xs bg-black bg-opacity-60 rounded px-2 py-1">
+                    PV {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 sm:p-6"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-white text-3xl sm:text-4xl font-bold z-50 hover:text-pink-400 transition-colors"
+              onClick={() => {
+                setIsModalOpen(false);
+                setPromoVideoUrl(null);
+              }}
+              aria-label="Close video modal"
+            >
+              &times;
+            </button>
+            <iframe
+              src={promoVideoUrl}
+              title="Promo Video"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              className="w-full h-full"
+              frameBorder="0"
+            ></iframe>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
 
 export default AnimeDetail;
-
-{ /* Add modal styles */ }
-<style jsx>{`
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0,0,0,0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  .modal-content {
-    position: relative;
-    background: #000;
-    padding: 1rem;
-    border-radius: 8px;
-    max-width: 90vw;
-    max-height: 80vh;
-  }
-  .modal-close {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-`}</style>
