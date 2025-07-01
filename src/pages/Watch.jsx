@@ -42,6 +42,7 @@ const Watch = () => {
   const [recommendations, setRecommendations] = useState([]);
   const [trailer, setTrailer] = useState(null);
   const [hindiDubEpisodeCount, setHindiDubEpisodeCount] = useState(0);
+  const [isNotFound, setIsNotFound] = useState(false);
 
 
 
@@ -54,8 +55,12 @@ const Watch = () => {
         const details = await fetchAnimeDetailsWithCache(animeId);
         setAnimeDetails(details.anime);
         setEpisodes(details.episodes);
+        setIsNotFound(false);
       } catch (error) {
         console.error("Error fetching anime details:", error);
+        if (error.response && error.response.status === 404 && error.response.data === "Sorry, the page you are looking for could not be found.") {
+          setIsNotFound(true);
+        }
       }
     };
 
@@ -145,9 +150,17 @@ useEffect(() => {
     if (!animeDetails || !animeDetails.title) return;
 
     const fetchHindiDubCount = async () => {
-      const slugifiedName = slugify(animeDetails.title);
-      const count = await fetchHindiDubEpisodeCount(slugifiedName, currentEpisode);
-      setHindiDubEpisodeCount(count);
+      try {
+        const slugifiedName = slugify(animeDetails.title);
+        const count = await fetchHindiDubEpisodeCount(slugifiedName, currentEpisode);
+        setHindiDubEpisodeCount(count);
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          setHindiDubEpisodeCount(0);
+        } else {
+          console.error("Error fetching Hindi Dub episode count:", error);
+        }
+      }
     };
 
     fetchHindiDubCount();
@@ -370,7 +383,7 @@ useEffect(() => {
     </div>
   </div>
   <div className="server-section">
-  {hindiDubEpisodeCount > 0 && (
+  {!isNotFound && hindiDubEpisodeCount > 0 && (
     <div className="hindi-section">
       <div className="server-label">Hindi:</div>
       <div className="server-buttons">
