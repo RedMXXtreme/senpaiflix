@@ -179,6 +179,9 @@ export function get2AnimeEmbedUrl3(animeName, episodeNumber) {
  */
 export async function fetchEmbedIdFromAnimegg(episodeUrl) {
   try {
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
     // Fetch the episode URL via the new backend server to bypass CORS
     proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
@@ -218,6 +221,10 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
   try {
     const episodeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
     console.log("Fetching AnimeWorld iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
@@ -252,6 +259,10 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
 export async function fetchHindiDubEpisodeCount(animeName, episode) {
   try {
     const animeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(animeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
