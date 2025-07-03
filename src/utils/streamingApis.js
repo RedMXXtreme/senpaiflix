@@ -1,4 +1,3 @@
-
 import axios from "axios";
 
 const jikanCache = new Map();
@@ -222,10 +221,10 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
     const episodeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
     console.log("Fetching AnimeWorld iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
+    // Throttle request by waiting 1 secon before API calld
     await sleep(1000);
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -250,6 +249,51 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
 }
 
 /**
+ * Fetch iframe URL from GogoAnime-india episode page by scraping iframe src.
+ * @param {string} animeName - The anime name in URL format.
+ * @param {number|string} episode - The episode number.
+ * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
+ */
+const GogoAnime = new Map();
+
+export async function fetchIframefromGogoAnime(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-${episode}`;
+  if (GogoAnime.has(cacheKey)) {
+    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
+    return GogoAnime.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://9anime.org.lv/${animeName}-episode-${episode}/`;
+    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+      },
+    });
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      GogoAnime.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in animeworld-india page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse animeworld-india episode page:", error);
+    return null;
+  }
+}
+
+/**
  * Fetch the total number of Hindi dub episodes available for an anime from desidubanime.me.
  * @param {string} animeName - The slugified anime name.
  * @returns {Promise<number>} - The number of Hindi dub episodes available.
@@ -263,7 +307,7 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(animeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(animeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -283,5 +327,50 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
   } catch (error) {
     console.error("Failed to fetch or parse desidubanime anime page for episode count:", error);
     return 0;
+  }
+}
+
+/**
+ * Fetch iframe URL from 9anime.org.lv dub episode page by scraping iframe src.
+ * @param {string} animeName - The anime name in URL format.
+ * @param {number|string} episode - The episode number.
+ * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
+ */
+const nineAnimeDubCache = new Map();
+
+export async function fetchIframeFrom9AnimeDub(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-dub-${episode}`;
+  if (nineAnimeDubCache.has(cacheKey)) {
+    console.log("Returning cached 9anime dub iframe URL for:", cacheKey);
+    return nineAnimeDubCache.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://9anime.org.lv/${animeName}-dub-episode-${episode}/`;
+    console.log("Fetching 9anime dub iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+      },
+    });
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Regex to capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      nineAnimeDubCache.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in 9anime dub page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse 9anime dub episode page:", error);
+    return null;
   }
 }
