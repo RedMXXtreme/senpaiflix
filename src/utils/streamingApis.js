@@ -224,7 +224,7 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
     // Throttle request by waiting 1 secon before API calld
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -269,7 +269,7 @@ export async function fetchIframefromGogoAnime(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -307,7 +307,7 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(animeUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(animeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
@@ -351,7 +351,7 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0',
