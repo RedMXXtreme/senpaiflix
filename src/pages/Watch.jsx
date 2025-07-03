@@ -10,6 +10,8 @@ import {
   fetchEmbedIdFromAnimegg,
   fetchIframeUrlFromDesiDub,
   fetchHindiDubEpisodeCount,
+  fetchIframefromGogoAnime,
+  fetchIframeFrom9AnimeDub,
 } from "../utils/streamingApis";
 import "./watch.css";
 import Countdowm from "../components/countdown";
@@ -31,6 +33,8 @@ const Watch = () => {
   const [embedId, setEmbedId] = useState(null);
   const [streamUrlAnimeGG, setStreamUrlAnimeGG] = useState("");
   const [streamUrlDesiDub, setStreamUrlDesiDub] = useState("");
+  const [streamUrlGogoAnime, setStreamUrlGogoAnime] = useState("");
+  const [streamUrl9AnimeDub, setStreamUrl9AnimeDub] = useState("");
   const [autoNext, setAutoNext] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [autoSkip, setAutoSkip] = useState(true);
@@ -143,7 +147,47 @@ useEffect(() => {
   };
 
   fetchDesiDubUrl();
-}, [animeDetails, currentEpisode]);
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchGogoAnimeUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframefromGogoAnime(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframefromGogoAnime(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlGogoAnime(iframeUrl || "");
+    };
+
+    fetchGogoAnimeUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetch9AnimeDubUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeFrom9AnimeDub(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeFrom9AnimeDub(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrl9AnimeDub(iframeUrl || "");
+    };
+
+    fetch9AnimeDubUrl();
+  }, [animeDetails, currentEpisode]);
 
 
   useEffect(() => {
@@ -300,13 +344,18 @@ useEffect(() => {
                   ? streamUrl1
                   : server === "HD-3"
                   ? streamUrl2
-                  : server === "HD-4"
-                  ? streamUrl3
-                  : server === "AnimeGG"
-                  ? streamUrlAnimeGG
-                  : server === "DesiDub"
-                  ? streamUrlDesiDub
-                  : streamUrl
+              : server === "HD-4"
+              ? streamUrl3
+              : server === "AnimeGG"
+              ? streamUrlAnimeGG
+              : server === "DesiDub"
+              ? streamUrlDesiDub
+              : server === "GogoAnime"
+              ? streamUrlGogoAnime
+              : server === "9AnimeDub"
+              ? streamUrl9AnimeDub
+              : streamUrl
+                  
                   
 
                 }
@@ -339,64 +388,43 @@ useEffect(() => {
                 
               </div>
 
-              <div className="watching-server-container">
-                <div className="watching-message-container">
-                <div className="watching-message">
-                  You are watching <br />
-                  Episode {currentEpisode}
-                  <br />
-                  If current server doesn't work <br />
-                  please try other servers beside.
-                </div>
-                </div>
-<div className="server-controls-container">
-  <div className="server-section">
-    <div className="server-label">
-      <div className="cc-label">cc</div>
-      SUB:
-    </div>
-    <div className="server-buttons">
-      <button className={server === "HD-1" ? "active" : ""} onClick={() => { setServer("HD-1"); }}>
-        HD-1
-      </button>
-      <button className={server === "HD-2" ? "active" : ""} onClick={() => { setServer("HD-2"); }}>
-        HD-2
-      </button>
-      <button className={server === "AnimeGG" ? "active" : ""} onClick={() => { setServer("AnimeGG"); }}>
-        AnimeGG
-      </button>
+  <div className="watching-server-container">
+              
+<div className="server-selection-container">
+  <div className="watching-message-container">
+    <div className="watching-message">
+      You are Watching <br />
+      <strong>Episode {currentEpisode}</strong> <br />
+      If current server doesn’t work <br />
+      please try other servers beside.
     </div>
   </div>
-
-  <div className="server-section">
-    <div className="server-label">
-      <div className="cc-label">🎤</div>
-      DUB:
-    </div>
-    <div className="server-buttons">
-      <button className={server === "HD-3" ? "active" : ""} onClick={() => { setServer("HD-3"); }}>
-        HD-3
-      </button>
-      <button className={server === "HD-4" ? "active" : ""} onClick={() => { setServer("HD-4"); }}>
-        HD-4
-      </button>
-    </div>
-  </div>
-  <div className="server-section">
-  {!isNotFound && hindiDubEpisodeCount > 0 && (
-    <div className="hindi-section">
-      <div className="server-label">Hindi:</div>
+  <div className="server-buttons-wrapper">
+    <div className="server-row">
+      <div className="server-label">
+        <span role="img" aria-label="keyboard">⌨️</span> SUB:
+      </div>
       <div className="server-buttons">
-        <button className={server === "DesiDub" ? "active" : ""} onClick={() => { setServer("DesiDub"); }}>
-          DesiDub
-        </button>
+        <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
+        <button className={server === "HD-2" ? "active" : ""} onClick={() => setServer("HD-2")}>HD-2</button>
+        <button className={server === "GogoAnime" ? "active" : ""} onClick={() => setServer("GogoAnime")}>zaza</button>
       </div>
     </div>
-  )}
+    <div className="server-row">
+      <div className="server-label">
+        <span role="img" aria-label="microphone">🎤</span> DUB:
+      </div>
+      <div className="server-buttons">
+        <button className={server === "HD-3" ? "active" : ""} onClick={() => setServer("HD-3")}>HD-3</button>
+        <button className={server === "HD-4" ? "active" : ""} onClick={() => setServer("HD-4")}>HD-4</button>
+        <button className={server === "DesiDub" ? "active" : ""} onClick={() => setServer("DesiDub")}>Hindi</button>
+        <button className={server === "9AnimeDub" ? "active" : ""} onClick={() => setServer("9AnimeDub")}>megg</button>
+      </div>
+    </div>
   </div>
 </div>
               </div>
-              {/* Countdown Timer */}
+              {/* Countdown Timer */} 
               <div className="countdown-container"> 
                 <Countdowm
                   title={animeDetails.title_english || animeDetails.title}
@@ -457,6 +485,8 @@ useEffect(() => {
                         ? streamUrl3
                         : server === "AnimeGG"
                         ? streamUrlAnimeGG
+                        : server === "GogoAnime"
+                        ? streamUrlGogoAnime
                         : streamUrl
 
                       }
