@@ -26,6 +26,9 @@ const Watch = () => {
   const [currentEpisode, setCurrentEpisode] = useState(
     episodeNumber ? parseInt(episodeNumber) : 1
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [lastVisiblePage, setLastVisiblePage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
   const [streamUrl1, setStreamUrl1] = useState("");
   const [streamUrl2, setStreamUrl2] = useState("");
@@ -44,22 +47,54 @@ const Watch = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
+  const [relations, setRelations] = useState([]);
   const [trailer, setTrailer] = useState(null);
   const [hindiDubEpisodeCount, setHindiDubEpisodeCount] = useState(0);
   const [isNotFound, setIsNotFound] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  
+  const showGridView = () => {
+    setShowGrid(true);
+  };
+
+  const showListView = () => {
+    setShowGrid(false);
+  };
 
 
+
+  const fetchEpisodesPage = async (page) => {
+    try {
+      const response = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/episodes?page=${page}`);
+      const data = await response.json();
+      if (data && data.data) {
+        setEpisodes(data.data);
+        if (data.pagination) {
+          setCurrentPage(data.pagination.current_page || page);
+          setLastVisiblePage(data.pagination.last_visible_page);
+          setHasNextPage(data.pagination.has_next_page);
+        }
+        // Reset current episode to first episode of new page
+        if (data.data.length > 0) {
+          setCurrentEpisode(data.data[0].mal_id);
+          navigate(`/watch/${animeId}/${data.data[0].mal_id}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching episodes page:", error);
+    }
+  };
 
   useEffect(() => {
     if (!animeId) return;
 
-   
     const fetchAnimeDetails = async () => {
       try {
         const details = await fetchAnimeDetailsWithCache(animeId);
         setAnimeDetails(details.anime);
-        setEpisodes(details.episodes);
         setIsNotFound(false);
+        // Fetch first page of episodes from paginated API
+        await fetchEpisodesPage(1);
       } catch (error) {
         console.error("Error fetching anime details:", error);
         if (error.response && error.response.status === 404 && error.response.data === "Sorry, the page you are looking for could not be found.") {
@@ -242,8 +277,44 @@ useEffect(() => {
     fetchRecommendations();
   }, [animeId]);
 
+  useEffect(() => {
+    if (!animeId) return;
+
+    const relationsCache = new Map();
+
+    const fetchRelations = async () => {
+      if (relationsCache.has(animeId)) {
+        setRelations(relationsCache.get(animeId));
+        return;
+      }
+      try {
+        const rels = await fetchAnimeRelations(animeId);
+        // rels is an array of objects with relation and entry array
+        // Flatten entries with relation type for rendering
+        const flattened = [];
+        rels.forEach((rel) => {
+          if (rel.entry && Array.isArray(rel.entry)) {
+            rel.entry.forEach((entry) => {
+              flattened.push({
+                ...entry,
+                relationType: rel.relation,
+              });
+            });
+          }
+        });
+        relationsCache.set(animeId, flattened);
+        setRelations(flattened);
+      } catch (error) {
+        console.error("Error fetching relations:", error);
+      }
+    };
+
+    fetchRelations();
+  }, [animeId]);
+
   const handleEpisodeChange = (epNum) => {
     setCurrentEpisode(epNum);
+    setShowGrid(false);
     navigate(`/watch/${animeId}/${epNum}`);
   };
 
@@ -277,32 +348,107 @@ useEffect(() => {
       <div className="main-content">
         {/* Left Sidebar - Episode List */}
           <div className="left-column">
-            <div className="episode-list-header">
-              <strong>List of episodes:</strong>
+            <div className="episode-list-header" style={{flexDirection: "column", alignItems: "flex-start", gap: "0.5rem"}}>
+                <div style={{display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center",height: "41px"}}>
+                <strong style={{fontSize: "1.25rem", color: "white"}}>Episodes</strong>
+                <div style={{display: "flex", gap: "0.5rem"}}>
+                  <button
+                    className="header-icon-btn"
+                    aria-label={showGrid ? "List" : "Grid"}
+                    onClick={() => setShowGrid(!showGrid)}
+                  >
+                    {showGrid ? "\u2630" : "\u2630"}
+                  </button>
+                </div>
+              </div>
               <input
                 type="text"
-                placeholder="Number of Ep"
+                placeholder="Find"
                 className="episode-search"
                 value={episodeSearch}
                 onChange={(e) => setEpisodeSearch(e.target.value)}
+                style={{width: "100%", maxWidth: "200px"}}
               />
+              <div className="pagination-layout" style={{width: "100%", justifyContent: "center"}}>
+                <button
+                  className="pagination-arrow"
+                  onClick={() => {
+                    if (currentPage > 1) {
+                      fetchEpisodesPage(currentPage - 1);
+                    }
+                  }}
+                  disabled={currentPage === 1}
+                  aria-label="Previous Page"
+                >
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+
+                <select
+                  className="pagination-range-select"
+                  value={currentPage}
+                  onChange={(e) => fetchEpisodesPage(Number(e.target.value))}
+                  aria-label="Select Page"
+                >
+                  {Array.from({ length: lastVisiblePage }, (_, i) => i + 1).map((pageNum) => (
+                    <option key={pageNum} value={pageNum}>
+                      {(() => {
+                        const start = (pageNum - 1) * episodes.length + 1;
+                        const end = Math.min(pageNum * episodes.length, animeDetails.episodes || 0);
+                        return `${String(start).padStart(3, '0')}-${String(end).padStart(3, '0')}`;
+                      })()}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  className="pagination-arrow"
+                  onClick={() => {
+                    if (hasNextPage) {
+                      fetchEpisodesPage(currentPage + 1);
+                    }
+                  }}
+                  disabled={!hasNextPage}
+                  aria-label="Next Page"
+                >
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div className="episode-list">
-              <ul>
+            {showGrid ? (
+              <div className="episode-grid">
                 {filteredEpisodes.map((ep) => (
-            <li
-              key={ep.mal_id}
-              className={ep.mal_id === currentEpisode ? "active" : ""}
-              onClick={() => handleEpisodeChange(ep.mal_id)}
-            >
-              <span className="episode-number">{ep.mal_id}</span>{" "}
-              {ep.title.length > 30
-                ? ep.title.slice(0, 30) + "..."
-                : ep.title}
-            </li>
+                  <button
+                    key={ep.mal_id}
+                    className={`episode-grid-item ${ep.mal_id === currentEpisode ? "active" : ""}`}
+                    
+                    onClick={() => handleEpisodeChange(ep.mal_id)}
+                  >
+                    {ep.mal_id}
+                  </button>
                 ))}
-              </ul>
-            </div>
+              </div>
+            ) : (
+              <div className="episode-list">
+                <ul>
+                  {filteredEpisodes.map((ep) => (
+                    <li
+                      key={ep.mal_id}
+                      className={ep.mal_id === currentEpisode ? "active" : ""}
+                      onClick={() => handleEpisodeChange(ep.mal_id)}
+                    >
+                      <span className="episode-number">{ep.mal_id}</span>{" "}
+                      {ep.title.length > 30
+                        ? ep.title.slice(0, 30) + "..."
+                        : ep.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Center - Video Player and Controls */}
@@ -504,42 +650,44 @@ useEffect(() => {
               </div>
             )}
             {/* Recommendation Section */}
-            <div className="recommendation-section">
-              <h3 className="recommendation-title">Recommended for you</h3>
-              <div className="recommendation-list">
-                {recommendations.length === 0 && <p>No recommendations available.</p>}
-                {recommendations.map((rec) => (
-                  <Link
-                    to={`/anime/${rec.entry.mal_id}`}
-                    key={rec.entry.mal_id}
-                    className="recommendation-item"
-                  >
-                    <div className="recommendation-image-wrapper">
-                      <img
-                        src={rec.entry.images?.jpg?.image_url}
-                        alt={rec.entry.title}
-                        className="recommendation-image"
-                      />
-                      {/* Badges */}
-                      <div className="recommendation-badges">
-                        {rec.entry.rating && rec.entry.rating.includes("R18") && (
-                          <div className="recommendation-badge">18+</div>
-                        )}
-                        {rec.entry.rating && !rec.entry.rating.includes("R18") && (
-                          <>
-                            <div className="recommendation-badge cc">cc</div>
-                            <div className="recommendation-badge mic">🎤</div>
-                          </>
-                        )}
+            <div className="relations-and-recommendation-container">
+              <div className="recommendation-section">
+                <h3 className="recommendation-title">Recommended for you</h3>
+                <div className="recommendation-list">
+                  {recommendations.length === 0 && <p>No recommendations available.</p>}
+                  {recommendations.map((rec) => (
+                    <Link
+                      to={`/anime/${rec.entry.mal_id}`}
+                      key={rec.entry.mal_id}
+                      className="recommendation-item"
+                    >
+                      <div className="recommendation-image-wrapper">
+                        <img
+                          src={rec.entry.images?.jpg?.image_url}
+                          alt={rec.entry.title}
+                          className="recommendation-image"
+                        />
+                        {/* Badges */}
+                        <div className="recommendation-badges">
+                          {rec.entry.rating && rec.entry.rating.includes("R18") && (
+                            <div className="recommendation-badge">18+</div>
+                          )}
+                          {rec.entry.rating && !rec.entry.rating.includes("R18") && (
+                            <>
+                              <div className="recommendation-badge cc">cc</div>
+                              <div className="recommendation-badge mic">🎤</div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="recommendation-title-text">
-                      {rec.entry.title.length > 20
-                        ? rec.entry.title.slice(0, 20) + "..."
-                        : rec.entry.title}
-                    </div>
-                  </Link>
-                ))}
+                      <div className="recommendation-title-text">
+                        {rec.entry.title.length > 20
+                          ? rec.entry.title.slice(0, 20) + "..."
+                          : rec.entry.title}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
     </div>
