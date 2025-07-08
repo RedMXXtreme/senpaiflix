@@ -1,7 +1,26 @@
 import axios from "axios";
 import { slugify } from "./slugify";
+
+const userAgents = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
+  "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
+];
+
+function getRandomUserAgent() {
+  const index = Math.floor(Math.random() * userAgents.length);
+  return userAgents[index];
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRandomDelay(min = 500, max = 3000) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 /**
@@ -169,12 +188,12 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
     console.log("Fetching AnimeWorld iframe URL from:", episodeUrl);
 
     // Throttle request by waiting 1 secon before API calld
-    await sleep(1000);
+    await sleep(getRandomDelay());
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': getRandomUserAgent(),
       },
     });
     console.log("Response status:", response.status);
@@ -213,12 +232,12 @@ export async function fetchIframefromGogoAnime(animeName, episode) {
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
     // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    await sleep(getRandomDelay());
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': getRandomUserAgent(),
       },
     });
     console.log("Response status:", response.status);
@@ -251,12 +270,12 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
     const animeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
 
     // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    await sleep(getRandomDelay());
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(animeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(animeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': getRandomUserAgent(),
       },
     });
     const html = response.data;
@@ -297,10 +316,10 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': getRandomUserAgent(),
       },
     });
     console.log("Response status:", response.status);
@@ -335,10 +354,10 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': getRandomUserAgent(),
       },
     });
     console.log("Response status:", response.status);
@@ -354,6 +373,97 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     return null;
   } catch (error) {
     console.error("Failed to fetch or parse hanimehentai episode page:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch iframe URL from AniHQ-india episode page by scraping iframe src.
+ * @param {string} animeName - The anime name in URL format.
+ * @param {number|string} episode - The episode number.
+ * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
+ */
+const AniHQ = new Map();
+
+export async function fetchIframefromAniHQAnimeSubbed(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-${episode}`;
+  if (AniHQ.has(cacheKey)) {
+    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
+    return AniHQ.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/`;  //https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/
+    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl, {
+      headers: {
+        'User-Agent': getRandomUserAgent(),
+      },
+    });
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      AniHQ.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in animeworld-india page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse animeworld-india episode page:", error);
+    return null;
+  }
+}
+
+
+/**
+ * Fetch iframe URL from AniHQDub-india episode page by scraping iframe src.
+ * @param {string} animeName - The anime name in URL format.
+ * @param {number|string} episode - The episode number.
+ * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
+ */
+const AniHQDub = new Map();
+
+export async function fetchIframefromAniHQAnimeDubbed(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-${episode}`;
+  if (AniHQDub.has(cacheKey)) {
+    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
+    return AniHQDub.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://anihq.to/watch/${animeName}-episode-${episode}-english-dubbed/`;  //https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/
+    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
+    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl, {
+      headers: {
+        'User-Agent': getRandomUserAgent(),
+      },
+    });
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      AniHQDub.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in animeworld-india page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse animeworld-india episode page:", error);
     return null;
   }
 }
