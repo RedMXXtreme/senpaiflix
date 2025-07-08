@@ -12,6 +12,8 @@ import {
   fetchIframefromGogoAnime,
   fetchIframeFrom9AnimeDub,
   fetchIframeUrlFromHanimeHentai,
+  fetchIframefromAniHQAnimeSubbed,
+  fetchIframefromAniHQAnimeDubbed,
 } from "../utils/streamingApis";
 import "./watch.css";
 import Countdowm from "../components/countdown";
@@ -38,6 +40,8 @@ const Watch = () => {
   const [streamUrlGogoAnime, setStreamUrlGogoAnime] = useState("");
   const [streamUrl9AnimeDub, setStreamUrl9AnimeDub] = useState("");
   const [streamUrlHanimeHentai, setStreamUrlHanimeHentai] = useState("");
+  const [streamUrlAniHQSubbed, setStreamUrlAniHQSubbed] = useState("");
+  const [streamUrlAniHQDubbed, setStreamUrlAniHQDubbed] = useState("");
   const [autoNext, setAutoNext] = useState(true);
   const [autoPlay, setAutoPlay] = useState(true);
   const [autoSkip, setAutoSkip] = useState(true);
@@ -183,6 +187,24 @@ useEffect(() => {
 
     fetchGogoAnimeUrl();
   }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetch9AnimeDubUrl = async () => {
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeFrom9AnimeDub(slugifiedName, currentEpisode);
+
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeFrom9AnimeDub(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrl9AnimeDub(iframeUrl || "");
+    };
+
+    fetch9AnimeDubUrl();
+  }, [animeDetails, currentEpisode]);
   
   useEffect(() => {
     if (!animeDetails) return;
@@ -207,21 +229,37 @@ useEffect(() => {
   useEffect(() => {
     if (!animeDetails) return;
 
-    const fetch9AnimeDubUrl = async () => {
-      // Try with original title
+    const fetchAniHQSubbedUrl = async () => {
       let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframeFrom9AnimeDub(slugifiedName, currentEpisode);
+      let iframeUrl = await fetchIframefromAniHQAnimeSubbed(slugifiedName, currentEpisode);
 
-      // If not found and English title exists, try with that
       if (!iframeUrl && animeDetails.title_english) {
         const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframeFrom9AnimeDub(fallbackSlug, currentEpisode);
+        iframeUrl = await fetchIframefromAniHQAnimeSubbed(fallbackSlug, currentEpisode);
       }
 
-      setStreamUrl9AnimeDub(iframeUrl || "");
+      setStreamUrlAniHQSubbed(iframeUrl || "");
     };
 
-    fetch9AnimeDubUrl();
+    fetchAniHQSubbedUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchAniHQDubbedUrl = async () => {
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframefromAniHQAnimeDubbed(slugifiedName, currentEpisode);
+
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframefromAniHQAnimeDubbed(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlAniHQDubbed(iframeUrl || "");
+    };
+
+    fetchAniHQDubbedUrl();
   }, [animeDetails, currentEpisode]);
 
 
@@ -483,6 +521,10 @@ useEffect(() => {
               ? streamUrlGogoAnime
               : server === "9AnimeDub"
               ? streamUrl9AnimeDub
+              : server === "AniHQSubbed"
+              ? streamUrlAniHQSubbed
+              : server === "AniHQDubbed"
+              ? streamUrlAniHQDubbed
               : server === "HD_player"
               ? streamUrlHanimeHentai
               : streamUrl
@@ -542,6 +584,7 @@ useEffect(() => {
             <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
             <button className={server === "HD-2" ? "active" : ""} onClick={() => setServer("HD-2")}>HD-2</button>
             <button className={server === "GogoAnime" ? "active" : ""} onClick={() => setServer("GogoAnime")}>zaza</button>
+            <button className={server === "AniHQSubbed" ? "active" : ""} onClick={() => setServer("AniHQSubbed")}>zoro</button>
           </>
         )}
       </div>
@@ -560,6 +603,7 @@ useEffect(() => {
               <button className={server === "DesiDub" ? "active" : ""} onClick={() => setServer("DesiDub")}>Hindi</button>
             )}
             <button className={server === "9AnimeDub" ? "active" : ""} onClick={() => setServer("9AnimeDub")}>megg</button>
+            <button className={server === "AniHQDubbed" ? "active" : ""} onClick={() => setServer("AniHQDubbed")}>bun</button>
           </>
         
       </div>
