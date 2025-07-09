@@ -190,7 +190,7 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
     // Throttle request by waiting 1 secon before API calld
     await sleep(getRandomDelay());
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -234,7 +234,7 @@ export async function fetchIframefromGogoAnime(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(getRandomDelay());
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -272,7 +272,7 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(getRandomDelay());
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(animeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(animeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -316,7 +316,7 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -354,7 +354,7 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -398,7 +398,7 @@ export async function fetchIframefromAniHQAnimeSubbed(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -444,7 +444,7 @@ export async function fetchIframefromAniHQAnimeDubbed(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://thingproxy.freeboard.io/fetch/${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
