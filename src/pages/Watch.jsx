@@ -460,67 +460,63 @@ useEffect(() => {
               <div className={`center-column`}>
               <div className="video-player" style={{ position: "relative", width: "100%", height: "500px", background: !isPlaying ? `url(${animeDetails.images?.jpg?.large_image_url}) center center / cover no-repeat` : "black" }}>
               {!isPlaying ? (
-                <div
-                  className="video-initial"
-                  onClick={() => setIsPlaying(true)}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    background: "rgba(0,0,0,0.25)",
-                  }}
-                >
-                  <div className="play-button-circle" style={{ zIndex: 2 }}>
-                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="40" cy="40" r="40" fill="#F97316"/>
-                      <path d="M32 26L56 40L32 54V26Z" fill="white"/>
-                    </svg>
-                  </div>
-                </div>
-              ) : streamUrl ? (
-                <>
-              <iframe
-              key={`stream-${server}-${currentEpisode}`}
-                title={`Episode ${currentEpisode}`}
-              src={
-                server === "HD-1"
-                  ? streamUrl
-                  : server === "HD-2"
-                  ? streamUrl1
-                  : server === "HD-3"
-                  ? streamUrl2
-              : server === "HD-4"
-              ? streamUrl3
-              : server === "DesiDub"
-              ? streamUrlDesiDub
-              : server === "GogoAnime"
-              ? streamUrlGogoAnime
-              : server === "9AnimeDub"
-              ? streamUrl9AnimeDub
-              : server === "AniHQSubbed"
-              ? streamUrlAniHQSubbed
-              : server === "AniHQDubbed"
-              ? streamUrlAniHQDubbed
-              : server === "HD_player"
-              ? streamUrlHanimeHentai
-              : streamUrl
-                  
-
-                }
-                width="100%"
-                height="500px"
-                allowFullScreen
-              ></iframe>
-                </>
-                ) : (
-                <p>Loading stream...</p>
-                )} 
+  <div
+    className="video-initial"
+    onClick={() => setIsPlaying(true)}
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      background: "rgba(0,0,0,0.25)",
+    }}
+  >
+    <div className="play-button-circle" style={{ zIndex: 2 }}>
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="40" fill="#F97316"/>
+        <path d="M32 26L56 40L32 54V26Z" fill="white"/>
+      </svg>
+    </div>
+  </div>
+) : (
+  (server === "HD-1" && streamUrl) ||
+  (server === "HD-2" && streamUrl1) ||
+  (server === "HD-3" && streamUrl2) ||
+  (server === "HD-4" && streamUrl3) ||
+  (server === "DesiDub" && streamUrlDesiDub) ||
+  (server === "GogoAnime" && streamUrlGogoAnime) ||
+  (server === "9AnimeDub" && streamUrl9AnimeDub) ||
+  (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
+  (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
+  (server === "HD_player" && streamUrlHanimeHentai)
+) ? (
+  <iframe
+    key={`stream-${server}-${currentEpisode}`}
+    title={`Episode ${currentEpisode}`}
+    src={
+      server === "HD-1" ? streamUrl :
+      server === "HD-2" ? streamUrl1 :
+      server === "HD-3" ? streamUrl2 :
+      server === "HD-4" ? streamUrl3 :
+      server === "DesiDub" ? streamUrlDesiDub :
+      server === "GogoAnime" ? streamUrlGogoAnime :
+      server === "9AnimeDub" ? streamUrl9AnimeDub :
+      server === "AniHQSubbed" ? streamUrlAniHQSubbed :
+      server === "AniHQDubbed" ? streamUrlAniHQDubbed :
+      server === "HD_player" ? streamUrlHanimeHentai : ""
+    }
+    width="100%"
+    height="500px"
+    allowFullScreen
+  ></iframe>
+) : (
+  <p>Loading stream...</p>
+)}
               </div>
 
               <div className="video-controls">
@@ -620,43 +616,46 @@ useEffect(() => {
                 <div>Vote now</div>
               </div>
             </div>
-          </div>
+          </div> 
         </div>
 
             {focusMode && (
               <div className="modal-overlay" onClick={() => setFocusMode(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                  {streamUrl ? (
-                    <iframe
-              key={`stream-${server}-${currentEpisode}`}
-                title={`Episode ${currentEpisode}`}
-              src={
-                server === "HD-1"
-                  ? streamUrl
-                  : server === "HD-2"
-                  ? streamUrl1
-                  : server === "HD-3"
-                  ? streamUrl2
-              : server === "HD-4"
-              ? streamUrl3
-              : server === "DesiDub"
-              ? streamUrlDesiDub
-              : server === "GogoAnime"
-              ? streamUrlGogoAnime
-              : server === "9AnimeDub"
-              ? streamUrl9AnimeDub
-              : streamUrl
-
-                      }
-                      width="100%"
-                      height="100%"
-                      frameBorder="0"
-                      allowFullScreen
-                      allow="autoplay; fullscreen"
-                    ></iframe>
-                  ) : (
-                    <p>Loading stream...</p>
-                  )}
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>   
+                  {(server === "HD-1" && streamUrl) ||
+(server === "HD-2" && streamUrl1) ||
+(server === "HD-3" && streamUrl2) ||
+(server === "HD-4" && streamUrl3) ||
+(server === "DesiDub" && streamUrlDesiDub) ||
+(server === "GogoAnime" && streamUrlGogoAnime) ||
+(server === "9AnimeDub" && streamUrl9AnimeDub) ||
+(server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
+(server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
+(server === "HD_player" && streamUrlHanimeHentai) ? (
+  <iframe
+    key={`stream-${server}-${currentEpisode}`}
+    title={`Episode ${currentEpisode}`}
+    src={
+      server === "HD-1" ? streamUrl :
+      server === "HD-2" ? streamUrl1 :
+      server === "HD-3" ? streamUrl2 :
+      server === "HD-4" ? streamUrl3 :
+      server === "DesiDub" ? streamUrlDesiDub :
+      server === "GogoAnime" ? streamUrlGogoAnime :
+      server === "9AnimeDub" ? streamUrl9AnimeDub :
+      server === "AniHQSubbed" ? streamUrlAniHQSubbed :
+      server === "AniHQDubbed" ? streamUrlAniHQDubbed :
+      server === "HD_player" ? streamUrlHanimeHentai : ""
+    }
+    width="100%"
+    height="100%"
+    frameBorder="0"
+    allowFullScreen
+    allow="autoplay; fullscreen"
+  ></iframe>
+) : (
+  <p>Loading stream...</p>
+)}
                   <button className="modal-close-btn" onClick={() => setFocusMode(false)}>×</button>
                 </div>
               </div>
