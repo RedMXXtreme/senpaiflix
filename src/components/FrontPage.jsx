@@ -9,7 +9,7 @@ const FrontPage = () => {
         {/* Background */}
         <div className="absolute inset-0 z-0 grid grid-cols-6 gap-0 h-full">
           <video
-            src="https://v1.pinimg.com/videos/mc/720p/f6/3b/b8/f63bb8d17fe2c624412287df221a076b.mp4"
+            src="https://v1.pinimg.com/videos/iht/expMp4/9e/5e/04/9e5e04e2f2fda03ba1fb8fcbb10ace64_720w.mp4"
             type="video/mp4"
             className="col-span-6 w-full h-full object-cover"
             autoPlay
