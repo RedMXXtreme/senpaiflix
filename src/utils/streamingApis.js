@@ -335,21 +335,29 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     console.warn("Iframe URL not found in 9anime dub page.");
     return null;
   } catch (error) {
-    console.error("Failed to fetch or parse 9anime dub episode page:", error);
+    console.error("Failed to fetch or parse 9anime dub episode page:", error);   //fetchIframeUrlFromHanimeHentai
     return null;
   }
 }
 
 /**
- * Fetch iframe URL from hanimehentai.tv episode page by scraping iframe src.
+ * Fetch iframe URL from AniHQ-india episode page by scraping iframe src.
  * @param {string} animeName - The anime name in URL format.
  * @param {number|string} episode - The episode number.
  * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
  */
+const HanimeHentai = new Map();
+
 export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-${episode}`;
+  if (HanimeHentai.has(cacheKey)) {
+    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
+    return HanimeHentai.get(cacheKey);
+  }
   try {
-    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}`;
-    console.log("Fetching hanimehentai iframe URL from:", episodeUrl);
+    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}/`;  //https://hanimehentai.org/watch/${animeName}-episode-${episode}/
+    // Ensure the episodeUrl is properly formatted
+    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
@@ -363,19 +371,21 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     console.log("Response status:", response.status);
     const html = response.data;
 
-    // Regex to capture iframe src with or without quotes
-    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\\s]+)(?:"|')?[^>]*>/i);
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
     if (iframeSrcMatch && iframeSrcMatch[1]) {
       console.log("Iframe URL found:", iframeSrcMatch[1]);
+      HanimeHentai.set(cacheKey, iframeSrcMatch[1]);
       return iframeSrcMatch[1];
     }
-    console.warn("Iframe URL not found in hanimehentai page.");
+    console.warn("Iframe URL not found in animeworld-india page.");
     return null;
   } catch (error) {
-    console.error("Failed to fetch or parse hanimehentai episode page:", error);
+    console.error("Failed to fetch or parse animeworld-india episode page:", error);
     return null;
   }
 }
+
 
 /**
  * Fetch iframe URL from AniHQ-india episode page by scraping iframe src.
