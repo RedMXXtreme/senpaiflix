@@ -355,7 +355,7 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     return HanimeHentai.get(cacheKey);
   }
   try {
-    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}/`;  //https://hanimehentai.org/watch/${animeName}-episode-${episode}/
+    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}/`;  //https://watchhentai.net/videos/${animeName}-episode-1/
     // Ensure the episodeUrl is properly formatted
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
@@ -376,6 +376,52 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     if (iframeSrcMatch && iframeSrcMatch[1]) {
       console.log("Iframe URL found:", iframeSrcMatch[1]);
       HanimeHentai.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in animeworld-india page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse animeworld-india episode page:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetch iframe URL from AniHQ-india episode page by scraping iframe src.
+ * @param {string} animeName - The anime name in URL format.
+ * @param {number|string} episode - The episode number.
+ * @returns {Promise<string|null>} - The iframe URL if found, otherwise null.
+ */
+const watchhentai = new Map();
+
+export async function fetchIframeUrlFromWatchhentai(animeName, episode) {
+  const cacheKey = `slugify(${animeName})-${episode}`;
+  if (watchhentai.has(cacheKey)) {
+    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
+    return watchhentai.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://watchhentai.net/videos/${animeName}-episode-1/`;  //https://watchhentai.net/videos/${animeName}-episode-1/
+    // Ensure the episodeUrl is properly formatted
+    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
+
+    // Throttle request by waiting 1 second before API call
+    await sleep(1000);
+
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl, {
+      headers: {
+        'User-Agent': getRandomUserAgent(),
+      },
+    });
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      watchhentai.set(cacheKey, iframeSrcMatch[1]);
       return iframeSrcMatch[1];
     }
     console.warn("Iframe URL not found in animeworld-india page.");
