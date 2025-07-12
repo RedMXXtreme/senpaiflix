@@ -577,7 +577,7 @@ useEffect(() => {
         <span role="img" aria-label="keyboard">⌨️</span> SUB:
       </div>
       <div className="server-buttons">
-        {genreString === "Hentai" ? (
+        {genreString.includes("Hentai") ? (
           <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
         ) : (
           <>
@@ -589,7 +589,7 @@ useEffect(() => {
         )}
       </div>
     </div>
-    {genreString === "Hentai" ? null : (
+    {genreString.includes("Hentai") ? null : (
     <div className="server-row">
       <div className="server-label">
         <span role="img" aria-label="microphone">🎤</span> DUB:
