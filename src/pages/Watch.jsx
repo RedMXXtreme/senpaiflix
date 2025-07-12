@@ -35,7 +35,6 @@ const Watch = () => {
   const [streamUrl1, setStreamUrl1] = useState("");
   const [streamUrl2, setStreamUrl2] = useState("");
   const [streamUrl3, setStreamUrl3] = useState("");
-  const [embedId, setEmbedId] = useState(null);
   const [streamUrlDesiDub, setStreamUrlDesiDub] = useState("");
   const [streamUrlGogoAnime, setStreamUrlGogoAnime] = useState("");
   const [streamUrl9AnimeDub, setStreamUrl9AnimeDub] = useState("");
@@ -57,10 +56,6 @@ const Watch = () => {
   const [showGrid, setShowGrid] = useState(false);
   
   
-  
-
-
-
 
   const fetchEpisodesPage = async (page) => {
     try {
@@ -364,7 +359,7 @@ useEffect(() => {
       <div className="relative z-10">
         <div className="watch-page">
           <div className="breadcrumb">
-            <Link to="/home">Home</Link> / <Link to="/filter?type=tv"></Link> /{" "}
+            <Link to="/home">Home</Link> / <span>{animeDetails.type}</span> /{" "}
             <span>Watching {animeDetails.title_english || animeDetails.title}</span>
           </div>
 
