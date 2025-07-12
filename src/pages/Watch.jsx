@@ -41,10 +41,7 @@ const Watch = () => {
   const [streamUrlHanimeHentai, setStreamUrlHanimeHentai] = useState("");
   const [streamUrlAniHQSubbed, setStreamUrlAniHQSubbed] = useState("");
   const [streamUrlAniHQDubbed, setStreamUrlAniHQDubbed] = useState("");
-  const [autoNext, setAutoNext] = useState(true);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const [autoSkip, setAutoSkip] = useState(true);
-  const [expand, setExpand] = useState(false);
+  // Removed autoNext, autoPlay, autoSkip, expand state variables
   const [server, setServer] = useState("HD-1");
   const [episodeSearch, setEpisodeSearch] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -289,14 +286,7 @@ useEffect(() => {
     fetchHindiDubCount();
     fetchNineAnimeDubCount();
   }, [animeDetails, currentEpisode]);
-  useEffect(() => {
-    if (autoNext && currentEpisode < episodes.length) {
-      const timer = setTimeout(() => {
-        handleEpisodeChange(currentEpisode + 1);
-      }, 1440*1000); // 5 seconds delay before auto next
-      return () => clearTimeout(timer);
-    }
-  }, [autoNext, currentEpisode, episodes.length]);
+  // Removed useEffect for autoNext auto episode change
 
   useEffect(() => {
     if (!animeId) return;
@@ -329,10 +319,7 @@ useEffect(() => {
     navigate(`/watch/${animeId}/${epNum}`);
   };
 
-  const toggleAutoNext = () => setAutoNext(!autoNext);
-  const toggleAutoPlay = () => setAutoPlay(!autoPlay);
-  const toggleAutoSkip = () => setAutoSkip(!autoSkip);
-  const toggleExpand = () => setExpand(!expand);
+  // Removed toggle functions for autoNext, autoPlay, autoSkip, expand
 
 
   const filteredEpisodes = episodes.filter((ep) =>
@@ -470,7 +457,7 @@ useEffect(() => {
           </div>
 
           {/* Center - Video Player and Controls */}
-              <div className={`center-column ${expand ? "expanded" : ""}`}>
+              <div className={`center-column`}>
               <div className="video-player" style={{ position: "relative", width: "100%", height: "500px", background: !isPlaying ? `url(${animeDetails.images?.jpg?.large_image_url}) center center / cover no-repeat` : "black" }}>
               {!isPlaying ? (
                 <div
@@ -537,20 +524,8 @@ useEffect(() => {
               </div>
 
               <div className="video-controls">
-                <button onClick={toggleExpand} className={expand ? "active" : ""}>
-                Expand
-                </button>
                 <button onClick={() => setFocusMode(true)} className={focusMode ? "active" : ""}>
                 Focus
-                </button>
-                <button onClick={toggleAutoPlay} className={autoPlay ? "active" : ""}>
-                Auto Play {autoPlay ? "On" : "Off"}
-                </button>
-                <button onClick={toggleAutoNext} className={autoNext ? "active" : ""}>
-                Auto Next {autoNext ? "On" : "Off"}
-                </button>
-                <button onClick={toggleAutoSkip} className={autoSkip ? "active" : ""}>
-                Auto Skip Intro {autoSkip ? "On" : "Off"}
                 </button>
                 
               </div>
@@ -612,11 +587,9 @@ useEffect(() => {
                 <Countdowm
                   title={animeDetails.title_english || animeDetails.title}
                   episode={currentEpisode}
-                  autoNext={autoNext}
                 />
               </div>
               </div>
-
               {/* Right Sidebar - Anime Info */}
         <div className="right-column">
           <div className="poster">
