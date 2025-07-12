@@ -12,6 +12,7 @@ import {
   fetchIframefromGogoAnime,
   fetchIframeFrom9AnimeDub,
   fetchIframeUrlFromHanimeHentai,
+  fetchIframeUrlFromWatchhentai,
   fetchIframefromAniHQAnimeSubbed,
   fetchIframefromAniHQAnimeDubbed,
 } from "../utils/streamingApis";
@@ -39,9 +40,9 @@ const Watch = () => {
   const [streamUrlGogoAnime, setStreamUrlGogoAnime] = useState("");
   const [streamUrl9AnimeDub, setStreamUrl9AnimeDub] = useState("");
   const [streamUrlHanimeHentai, setStreamUrlHanimeHentai] = useState("");
+  const [streamUrlWatchHentai, setStreamUrlWatchHentai] = useState("");
   const [streamUrlAniHQSubbed, setStreamUrlAniHQSubbed] = useState("");
   const [streamUrlAniHQDubbed, setStreamUrlAniHQDubbed] = useState("");
-  // Removed autoNext, autoPlay, autoSkip, expand state variables
   const [server, setServer] = useState("HD-1");
   const [episodeSearch, setEpisodeSearch] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -197,7 +198,7 @@ useEffect(() => {
 
     fetch9AnimeDubUrl();
   }, [animeDetails, currentEpisode]);
-  
+
   useEffect(() => {
     if (!animeDetails) return;
 
@@ -216,6 +217,46 @@ useEffect(() => {
     };
 
     fetchHanimeHentaiUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchWatchHentaiUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlWatchHentai(iframeUrl || "");
+    };
+
+    fetchWatchHentaiUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchWatchHentaiUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlWatchHentai(iframeUrl || "");
+    };
+
+    fetchWatchHentaiUrl();
   }, [animeDetails, currentEpisode]);
 
   useEffect(() => {
@@ -493,7 +534,8 @@ useEffect(() => {
   (server === "9AnimeDub" && streamUrl9AnimeDub) ||
   (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
   (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
-  (server === "HD_player" && streamUrlHanimeHentai)
+  (server === "HD_player" && streamUrlHanimeHentai) ||
+  (server === "HD_player_2" && streamUrlWatchHentai)
 ) ? (
   <iframe
     key={`stream-${server}-${currentEpisode}`}
@@ -508,7 +550,8 @@ useEffect(() => {
       server === "9AnimeDub" ? streamUrl9AnimeDub :
       server === "AniHQSubbed" ? streamUrlAniHQSubbed :
       server === "AniHQDubbed" ? streamUrlAniHQDubbed :
-      server === "HD_player" ? streamUrlHanimeHentai : ""
+      server === "HD_player" ? streamUrlHanimeHentai :
+      server === "HD_player_2" ? streamUrlWatchHentai : ""
     }
     width="100%"
     height="500px"
@@ -544,7 +587,10 @@ useEffect(() => {
       </div>
       <div className="server-buttons">
         {genreString.includes("Hentai") ? (
-          <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
+          <>
+            <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
+            <button className={server === "HD_player_2" ? "active" : ""} onClick={() => setServer("HD_player_2")}>HD_player 2</button>
+          </>
         ) : (
           <>
             <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
@@ -631,7 +677,8 @@ useEffect(() => {
 (server === "9AnimeDub" && streamUrl9AnimeDub) ||
 (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
 (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
-(server === "HD_player" && streamUrlHanimeHentai) ? (
+(server === "HD_player" && streamUrlHanimeHentai) ||
+(server === "HD_player_2" && streamUrlWatchHentai) ? (
   <iframe
     key={`stream-${server}-${currentEpisode}`}
     title={`Episode ${currentEpisode}`}
@@ -645,7 +692,8 @@ useEffect(() => {
       server === "9AnimeDub" ? streamUrl9AnimeDub :
       server === "AniHQSubbed" ? streamUrlAniHQSubbed :
       server === "AniHQDubbed" ? streamUrlAniHQDubbed :
-      server === "HD_player" ? streamUrlHanimeHentai : ""
+      server === "HD_player" ? streamUrlHanimeHentai :
+      server === "HD_player_2" ? streamUrlWatchHentai : ""
     }
     width="100%"
     height="100%"
@@ -655,7 +703,7 @@ useEffect(() => {
   ></iframe>
 ) : (
   <p>Loading stream...</p>
-)}
+)}   
                   <button className="modal-close-btn" onClick={() => setFocusMode(false)}>×</button>
                 </div>
               </div>
