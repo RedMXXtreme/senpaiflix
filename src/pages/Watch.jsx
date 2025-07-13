@@ -394,10 +394,10 @@ useEffect(() => {
           <div className="main-content">
             {/* Left Sidebar - Episode List */}
           <div className="left-column">
-            <div className="episode-list-header" style={{flexDirection: "column", alignItems: "flex-start", gap: "0.5rem"}}>
-                <div style={{display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center",height: "41px"}}>
-                <strong style={{fontSize: "1.25rem", color: "white"}}>Episodes</strong>
-                <div style={{display: "flex", gap: "0.5rem"}}>
+            <div className="episode-list-header">
+              <div className="episode-list-header-top">
+                <strong className="episode-list-title">Episodes</strong>
+                <div className="header-controls">
                   <button
                     className="header-icon-btn"
                     aria-label={showGrid ? "List" : "Grid"}
@@ -413,9 +413,8 @@ useEffect(() => {
                 className="episode-search"
                 value={episodeSearch}
                 onChange={(e) => setEpisodeSearch(e.target.value)}
-                style={{width: "100%", maxWidth: "200px"}}
               />
-              <div className="pagination-layout" style={{width: "100%", justifyContent: "center"}}>
+              <div className="pagination-layout">
                 <button
                   className="pagination-arrow"
                   onClick={() => {
@@ -499,31 +498,19 @@ useEffect(() => {
 
           {/* Center - Video Player and Controls */}
               <div className={`center-column`}>
-              <div className="video-player" style={{ position: "relative", width: "100%", height: "500px", background: !isPlaying ? `url(${animeDetails.images?.jpg?.large_image_url}) center center / cover no-repeat` : "black" }}>
-              {!isPlaying ? (
-  <div
-    className="video-initial"
-    onClick={() => setIsPlaying(true)}
-    style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      cursor: "pointer",
-      background: "rgba(0,0,0,0.25)",
-    }}
-  >
-    <div className="play-button-circle" style={{ zIndex: 2 }}>
-      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="40" cy="40" r="40" fill="#F97316"/>
-        <path d="M32 26L56 40L32 54V26Z" fill="white"/>
-      </svg>
-    </div>
-  </div>
+              <div className="video-player" style={{backgroundImage: !isPlaying ? `url(${animeDetails.images?.jpg?.large_image_url})` : 'none' }}>
+                {!isPlaying ? (
+                  <div
+                    className="video-initial-overlay"
+                    onClick={() => setIsPlaying(true)}
+                  >
+                    <div className="play-button-circle">
+                      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="40"/>
+                        <path d="M32 26L56 40L32 54V26Z"/>
+                      </svg>
+                    </div>
+                  </div>
 ) : (
   (server === "HD-1" && streamUrl) ||
   (server === "HD-2" && streamUrl1) ||
