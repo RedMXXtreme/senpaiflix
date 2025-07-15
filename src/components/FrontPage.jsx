@@ -1,7 +1,24 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import SearchBar from "./SearchBar";
 
 const FrontPage = () => {
+  const videoUrls = [
+    "https://v1.pinimg.com/videos/mc/720p/f6/3b/b8/f63bb8d17fe2c624412287df221a076b.mp4",
+    "https://v1.pinimg.com/videos/iht/expMp4/9c/2f/09/9c2f095e92dffd9848338e3cc500821d_720w.mp4",
+    "https://v1.pinimg.com/videos/iht/720p/c4/ef/6f/c4ef6f8f2ca196e430b0a37c97aa629a.mp4",
+    "https://v1.pinimg.com/videos/iht/expMp4/05/40/70/054070ffa0eb0314cf3d9f80a271abf4_720w.mp4",
+    "https://v1.pinimg.com/videos/mc/720p/92/e6/0f/92e60f0b442860324b155fe025b2d1eb.mp4",
+    "https://v1.pinimg.com/videos/iht/expMp4/98/1f/f9/981ff96105c30c7dbe25b7f6cf203ad9_720w.mp4",
+    "https://v1.pinimg.com/videos/mc/720p/91/72/6a/91726ac4a96b0a57002d17a4946909f4.mp4",   // Add more video URLs as needed
+  ];
+
+  const [randomVideo, setRandomVideo] = useState(videoUrls[0]);
+
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * videoUrls.length);
+    setRandomVideo(videoUrls[randomIndex]);
+  }, []);
+
   return (
     <div className="text-white min-h-screen flex flex-col items-center justify-start px-4 md:pt-16" style={{ fontFamily: "Poppins, sans-serif" , paddingTop: "9rem" }}>
       {/* Header Section */}
@@ -9,14 +26,14 @@ const FrontPage = () => {
         {/* Background */}
         <div className="absolute inset-0 z-0 grid grid-cols-6 gap-0 h-full">
           <video
-            src="https://v1.pinimg.com/videos/iht/expMp4/9e/5e/04/9e5e04e2f2fda03ba1fb8fcbb10ace64_720w.mp4"
+            src={randomVideo}
             type="video/mp4"
             className="col-span-6 w-full h-full object-cover"
             autoPlay
             loop
             muted
           >
-            </video>
+          </video>
         </div>
 
         {/* Overlay */}
