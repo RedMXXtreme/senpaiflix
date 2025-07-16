@@ -21,6 +21,7 @@ export default function TrendingCarousel() {
                 coverImage {
                   large
                 }
+                episodes
                 averageScore
                 popularity
                 format
@@ -63,7 +64,7 @@ export default function TrendingCarousel() {
               <p className="font-medium text-sm max-w-[120px] leading-snug">{anime.title.english}</p>
               <div className="flex items-center gap-1 mt-1 text-xs">
                 <span className="bg-red-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
-                  CC {anime.popularity ?? '—'}
+                  CC {anime.episodes ?? '—'}
                 </span>
                 <span className="bg-green-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
                   🔍 {anime.averageScore ?? '—'}
