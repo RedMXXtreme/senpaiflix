@@ -1,44 +1,57 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, ChevronLeft, Volume2 } from "lucide-react";
+import { sendAniListQuery } from "../utils/anilistApi";
+
 const HeroCarousel = () => {
   const [animeList, setAnimeList] = useState([]);
   const [current, setCurrent] = useState(0);
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    const CACHE_KEY = "top_anime_ona_bypopularity_10";
-    const getCachedData = (key) => {
+    const fetchData = async () => {
       try {
-        const cached = localStorage.getItem(key);
-        if (!cached) return null;
-        return JSON.parse(cached);
-      } catch {
-        return null;
+        const query = `
+          query {
+            Page(perPage: 10) {
+              media(
+        sort: POPULARITY_DESC,
+        type: ANIME,
+        seasonYear: ${currentYear}
+      ) {
+                idMal
+                title {
+                  romaji
+                  english
+                }
+                coverImage {
+                  medium
+                  extraLarge
+                }
+                episodes
+                duration
+                description(asHtml: false)
+                averageScore
+                season
+                seasonYear
+                startDate {
+                  year
+                  month
+                  day
+                }
+                format
+              }
+            }
+          }
+        `;
+
+        const data = await sendAniListQuery(query);
+        setAnimeList(data.Page.media);
+      } catch (err) {
+        console.error(err);
       }
     };
-    const setCachedData = (key, data) => {
-      try {
-        localStorage.setItem(key, JSON.stringify(data));
-      } catch {}
-    };
 
-    const cachedData = getCachedData(CACHE_KEY);
-    if (cachedData) {
-      setAnimeList(cachedData);
-      return;
-    }
-    // Throttle API call by introducing a delay of 1 second before fetching
-    const delay = 1000; // 1 second delay
-    const timer = setTimeout(() => {
-      fetch("https://api.jikan.moe/v4/top/anime?type=ona&filter=bypopularity&limit=10")
-        .then((res) => res.json())
-        .then((data) => {
-          setAnimeList(data.data);
-          setCachedData(CACHE_KEY, data.data);
-        })
-        .catch((err) => console.error(err));
-    }, delay);
-
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -51,39 +64,41 @@ const HeroCarousel = () => {
   if (animeList.length === 0) return null;
   const anime = animeList[current];
 
+  const airedString = anime.startDate?.year
+    ? `${anime.startDate.day || "??"}/${anime.startDate.month || "??"}/${anime.startDate.year}`
+    : "Unknown";
+
   return (
     <section className="relative h-[90vh] w-full overflow-hidden text-white">
       {/* Background */}
       <div className="absolute inset-0">
         <img
-          src={anime.images.jpg.large_image_url}
-          alt={anime.title}
+          src={anime.coverImage.extraLarge || anime.coverImage.medium}
+          alt={anime.title.romaji}
           className="object-cover object-center w-full h-full brightness-[.9] transition duration-500"
           loading="lazy"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageResolution: "from-image 300dpi" }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f1b] via-[#0f0f1b]/80 to-transparent" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 h-full px-6 md:px-16 py-10 flex flex-col justify-end md:justify-center max-w-screen-xl mx-auto">
-        <p className="text-pink-400 text-sm mb-2">{anime.score}#Spotlight</p>
+        <p className="text-pink-400 text-sm mb-2">{anime.averageScore || "N/A"}#Spotlight</p>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4">
-          {anime.title_english || anime.title}
+          {anime.title.english || anime.title.romaji}
         </h1>
 
         {/* Meta row */}
         <div className="flex items-center gap-3 text-sm text-white mb-4 flex-wrap">
           <span className="flex items-center gap-1">
-            <span className="text-xs">🔘</span> TV
+            <span className="text-xs">🔘</span> {anime.format || "TV"}
           </span>
-          <span className="flex items-center gap-1">⏱️ {anime.duration}</span>
-          <span className="flex items-center gap-1">
-            📅 {anime.aired?.string || "Unknown"}
-          </span>
+          <span className="flex items-center gap-1">⏱️ {anime.duration || "?"} min</span>
+          <span className="flex items-center gap-1">📅 {airedString}</span>
           <span className="bg-pink-500 text-xs px-2 py-0.5 rounded">HD</span>
           <span className="bg-green-500 text-xs px-2 py-0.5 rounded">
-            cc {anime.episodes}
+            cc {anime.episodes || "?"}
           </span>
           <span className="bg-blue-600 text-xs px-2 py-0.5 rounded">
             <Volume2 size={12} className="inline-block" /> 8
@@ -92,19 +107,19 @@ const HeroCarousel = () => {
 
         {/* Description */}
         <p className="text-gray-300 max-w-2xl text-sm mb-6 line-clamp-3">
-          {anime.synopsis}
+          {anime.description?.replace(/<[^>]+>/g, "")}
         </p>
 
         {/* Buttons */}
         <div className="flex gap-4">
           <a
-            href={`/watch/${anime.mal_id}`}
+            href={`/watch/${anime.idMal}`}
             className="bg-pink-400 hover:bg-pink-500 text-white font-semibold text-sm px-6 py-2 rounded-full"
           >
             ▶️ Watch Now
           </a>
           <a
-            href={`/anime/${anime.mal_id}`}
+            href={`/anime/${anime.idMal}`}
             className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-6 py-2 rounded-full"
           >
             Detail ➤
@@ -130,7 +145,7 @@ const HeroCarousel = () => {
         </button>
       </div>
 
-      {/* Vertical Dots Navigation for Mobile */}
+      {/* Dots Navigation for Mobile */}
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 flex flex-col gap-3 md:hidden">
         {animeList.map((_, index) => (
           <button
