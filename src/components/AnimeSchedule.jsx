@@ -102,8 +102,8 @@ const AnimeSchedule = () => {
   const isSameDate = (d1, d2) => d1.toDateString() === d2.toDateString();
 
   return (
-    <div className="bg-[#1a1a2e] text-white p-6 rounded-md max-w-4xl mx-auto font-sans">
-      <div className="flex items-center justify-between mb-6">
+   <div className="bg-[#1f1f2e] rounded-xl p-4 text-sm">      
+  <div className="flex items-center justify-between mb-6">
         <button
           onClick={goToPreviousWeek}
           className="bg-gray-800 rounded-full p-2 hover:bg-gray-700 transition"
@@ -130,7 +130,7 @@ const AnimeSchedule = () => {
               <button
                 key={i}
                 onClick={() => setSelectedDate(d)}
-                className={`flex flex-col items-center justify-center min-w-[80px] py-3 px-4 rounded-lg cursor-pointer transition ${
+                className={`flex flex-col items-center justify-center min-w-[64px] py-3 px-4 rounded-lg cursor-pointer transition ${
                   selected ? 'bg-pink-400 text-white font-bold' : 'bg-gray-800 text-gray-400'
                 }`}
               >
