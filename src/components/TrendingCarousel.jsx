@@ -1,103 +1,80 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { sendAniListQuery } from '../utils/anilistApi';
 
-export default function TrendingAnime() {
+export default function TrendingCarousel() {
   const [animeData, setAnimeData] = useState([]);
-  const [startIndex, setStartIndex] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(8);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const fetchAnime = async () => {
-        try {
-          const response = await axios.get('https://api.jikan.moe/v4/top/anime?type=tv&filter=bypopularity&limit=16');
-          const dataToSet = response.data.data.slice(0, 16);
-          setAnimeData(dataToSet);
-        } catch (error) {
-          console.error('Error fetching anime data:', error);
-        }
-      };
-
-      fetchAnime();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const updateItemsPerPage = () => {
-      if (window.innerWidth < 640) {
-        setItemsPerPage(2);
-      } else if (window.innerWidth < 1024) {
-        setItemsPerPage(4);
-      } else {
-        setItemsPerPage(8);
+    const fetchAnime = async () => {
+      try {
+        const query = `
+          query {
+            Page(perPage: 10) {
+              media(sort: TRENDING_DESC, type: ANIME) {
+                idMal
+                title {
+                  romaji
+                  english
+                }
+                coverImage {
+                  large
+                }
+                averageScore
+                popularity
+                format
+              }
+            }
+          }
+        `;
+        const data = await sendAniListQuery(query);
+        setAnimeData(data.Page.media);
+      } catch (error) {
+        console.error('Error fetching anime data:', error);
       }
     };
 
-    updateItemsPerPage();
-    window.addEventListener('resize', updateItemsPerPage);
-    return () => window.removeEventListener('resize', updateItemsPerPage);
+    fetchAnime();
   }, []);
 
-  const handleNext = () => {
-    if (startIndex + itemsPerPage < animeData.length) {
-      setStartIndex(startIndex + itemsPerPage);
-    }
-  };
-
-  const handlePrev = () => {
-    if (startIndex - itemsPerPage >= 0) {
-      setStartIndex(startIndex - itemsPerPage);
-    }
-  };
-
   return (
-    <div className="bg-[#19192c] text-white px-4 sm:px-6 py-4 rounded-lg shadow-lg max-w-screen-xl mx-auto my-8">
-      <h2 className="text-pink-400 text-3xl font-bold mb-4">Trending</h2>
-      <div className="relative flex items-center">
-        <button
-          onClick={handlePrev}
-          className="absolute left-0 z-10 bg-[#2c2c4c] p-2 rounded-full hover:bg-pink-500"
-          aria-label="Previous"
-        >
-          <ChevronLeft className="text-white w-6 h-6" />
-        </button>
-        <div className="flex gap-4 overflow-hidden w-full justify-center">
-          {animeData.slice(startIndex, startIndex + itemsPerPage).map((anime, index) => (
-            <div
-              key={anime.mal_id}
-              className="flex flex-col items-center cursor-pointer"
-              style={{ minWidth: '9rem' }}
-              onClick={() => navigate(`/anime/${anime.mal_id}`)}
-              role="button"
-              tabIndex={0}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  navigate(`/anime/${anime.mal_id}`);
-                }
-              }}
-            >
-              <img
-                src={anime.images.jpg.image_url}
-                alt={anime.title}
-                className="w-36 h-52 object-cover rounded-md shadow-lg transition-transform transform hover:scale-105"
-              />
-              <p className="text-sm mt-2 text-center truncate w-full" title={anime.title}>{anime.title}</p>
-              <p className="text-pink-400 text-lg font-bold">{String(index + 1 + startIndex).padStart(2, '0')}</p>
+    <div className="bg-[#0f0f1b] text-white w-full max-w-md mx-auto rounded-xl shadow-md p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <span className="text-orange-400">🏆</span> Top Trending
+        </h2>
+        <span className="bg-orange-500 text-xs font-bold px-2 py-1 rounded-full">NOW</span>
+      </div>
+      <div className="space-y-3">
+        {animeData.map((anime, index) => (
+          <div
+            key={anime.idMal}
+            onClick={() => navigate(`/anime/${anime.idMal}`)}
+            className="flex items-center bg-[#1c1c2e] p-2 rounded-lg shadow-sm hover:bg-[#2a2a40] transition cursor-pointer"
+          >
+            <div className="text-2xl font-bold text-green-400 w-6 text-center">{index + 1}</div>
+            <img
+              src={anime.coverImage.large}
+              alt={anime.title.romaji}
+              className="w-16 h-16 object-cover rounded-md mx-3"
+            />
+            <div className="flex-1">
+              <p className="font-medium text-sm max-w-[120px] leading-snug">{anime.title.english}</p>
+              <div className="flex items-center gap-1 mt-1 text-xs">
+                <span className="bg-red-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
+                  CC {anime.popularity ?? '—'}
+                </span>
+                <span className="bg-green-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
+                  🔍 {anime.averageScore ?? '—'}
+                </span>
+                <span className="bg-gray-700 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
+                  {anime.format ?? '—'}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
-        <button
-          onClick={handleNext}
-          className="absolute right-0 z-10 bg-[#2c2c4c] p-2 rounded-full hover:bg-pink-500"
-          aria-label="Next"
-        >
-          <ChevronRight className="text-white w-6 h-6" />
-        </button>
+          </div>
+        ))}
       </div>
     </div>
   );
