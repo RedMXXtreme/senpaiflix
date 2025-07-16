@@ -52,6 +52,18 @@ const Watch = () => {
   const [nineAnimeDubEpisodeCount, setNineAnimeDubEpisodeCount] = useState(0);
   const [isNotFound, setIsNotFound] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+
+  // Disable right-click context menu
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+    document.addEventListener("contextmenu", handleContextMenu);
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+    };
+  }, []);
+  
   
   
 
