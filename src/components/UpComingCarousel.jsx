@@ -1,104 +1,96 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { sendAniListQuery } from '../utils/anilistApi';
 
-export default function UpComingCarousel() {
+export default function UpComingGrid() {
   const [animeData, setAnimeData] = useState([]);
-  const [startIndex, setStartIndex] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(8);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const fetchAnime = async () => {
-        try {
-          const response = await axios.get('https://api.jikan.moe/v4/seasons/2022/spring?sfw');
-          const dataToSet = response.data.data.slice(0, 16);
-          setAnimeData(dataToSet);
-        } catch (error) {
-          console.error('Error fetching anime data:', error);
-        }
-      };
-
-      fetchAnime();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    const updateItemsPerPage = () => {
-      if (window.innerWidth < 640) {
-        setItemsPerPage(2);
-      } else if (window.innerWidth < 1024) {
-        setItemsPerPage(4);
-      } else {
-        setItemsPerPage(8);
+    const fetchAnime = async () => {
+      try {
+        const query = `
+          query {
+            Page(perPage: 24) {
+              media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
+                idMal
+                title {
+                  romaji
+                }
+                coverImage {
+                  large
+                }
+                episodes
+                format
+                averageScore
+              }
+            }
+          }
+        `;
+        const data = await sendAniListQuery(query);
+        setAnimeData(data.Page.media);
+      } catch (error) {
+        console.error('Error fetching anime data:', error);
       }
     };
-
-    updateItemsPerPage();
-    window.addEventListener('resize', updateItemsPerPage);
-    return () => window.removeEventListener('resize', updateItemsPerPage);
+    fetchAnime();
   }, []);
 
-  const handleNext = () => {
-    if (startIndex + itemsPerPage < animeData.length) {
-      setStartIndex(startIndex + itemsPerPage);
-    }
-  };
-
-  const handlePrev = () => {
-    if (startIndex - itemsPerPage >= 0) {
-      setStartIndex(startIndex - itemsPerPage);
-    }
-  };
-
   return (
-    <div className="bg-[#19192c] text-white px-6 py-4 rounded-lg shadow-lg max-w-screen-xl mx-auto my-8">
-      <h2 className="text-pink-400 text-3xl font-bold mb-4">UPCOMING</h2>
-      <div className="relative flex items-center">
-        <button
-          onClick={handlePrev}
-          className="absolute left-0 z-10 bg-[#2c2c4c] p-2 rounded-full hover:bg-pink-500"
-          aria-label="Previous"
-        >
-          <ChevronLeft className="text-white w-6 h-6" />
-        </button>
-        <div className="flex gap-4 overflow-hidden w-full justify-center">
-          {animeData.slice(startIndex, startIndex + itemsPerPage).map((anime, index) => (
-            <div
-              key={anime.mal_id}
-              className="flex flex-col items-center cursor-pointer"
-              style={{ minWidth: '9rem' }}
-              onClick={() => navigate(`/anime/${anime.mal_id}`)}
-              role="button"
-              tabIndex={0}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  navigate(`/anime/${anime.mal_id}`);
-                }
-              }}
-            >
-              <img
-                src={anime.images.jpg.image_url}
-                alt={anime.title}
-                className="w-full h-52 object-cover rounded-md shadow-lg transition-transform transform hover:scale-105"
-                style={{ maxWidth: '144px' }}
-              />
-              <p className="text-sm mt-2 text-center truncate w-full" title={anime.title}>{anime.title}</p>
-              <p className="text-pink-400 text-lg font-bold">{String(index + 1 + startIndex).padStart(2, '0')}</p>
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={handleNext}
-          className="absolute right-0 z-10 bg-[#2c2c4c] p-2 rounded-full hover:bg-pink-500"
-          aria-label="Next"
-        >
-          <ChevronRight className="text-white w-6 h-6" />
-        </button>
+    <div className="bg-[#0f0f1c] min-h-screen text-white py-8 px-4">
+      <h2 className="text-3xl font-bold mb-6 max-w-screen-xl mx-auto">Latest Update</h2>
+
+      <div className="max-w-screen-xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        {animeData.map((anime, index) => (
+          <div
+            key={anime.idMal}
+            className="relative cursor-pointer flex flex-col items-center"
+            onClick={() => navigate(`/anime/${anime.idMal}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') navigate(`/anime/${anime.idMal}`);
+            }}
+          >
+            <div className="relative cursor-pointer flex flex-col items-center">
+  {/* Top-left tags */}
+  <div className="absolute top-1 left-1 flex gap-1 z-10">
+    <span className="bg-orange-600 text-xs px-1 py-0.5 rounded text-white font-bold">
+      CC {anime.averageScore ? Math.floor(anime.averageScore / 10) : 'NR'}
+    </span>
+    {anime.episodes && (
+      <span className="bg-green-600 text-xs px-1 py-0.5 rounded text-white font-bold">
+        {anime.episodes}
+      </span>
+    )}
+  </div>
+
+  {/* Image */}
+  <img
+    src={anime.coverImage.large}
+    alt={anime.title.romaji}
+    className="w-full h-52 object-cover rounded-lg shadow-md transition-transform transform hover:scale-105"
+  />
+
+  {/* Title */}
+  <p
+    className="font-medium text-sm text-center w-full mt-2 px-2 line-clamp-1"
+    title={anime.title.romaji}
+  >
+    {anime.title.romaji}
+  </p>
+
+  {/* Format */}
+  <div className="mt-1 flex gap-1 items-center text-xs font-semibold">
+    {anime.format && (
+      <span className="bg-white text-black px-2 py-0.5 rounded shadow">
+        {anime.format}
+      </span>
+    )}
+  </div>
+</div>
+          </div>
+        ))}
       </div>
     </div>
   );
