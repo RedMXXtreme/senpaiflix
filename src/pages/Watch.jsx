@@ -562,7 +562,7 @@ useEffect(() => {
               </div>
 
               <div className="video-controls">
-                <button onClick={() => setFocusMode(true)} className={focusMode ? "active" : ""}>
+                <button onClick={() => { setFocusMode(true); setIsPlaying(false); }} className={focusMode ? "active" : ""}>
                 Focus
                 </button>
                 
