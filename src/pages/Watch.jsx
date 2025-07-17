@@ -165,8 +165,216 @@ const Watch = () => {
     }
   }, [animeDetails, episodes, currentEpisode]);
 
-  // ... (ALL EXISTING useEffects for servers remain unchanged)
+useEffect(() => {
+  const iframeCache = new Map();
 
+  const fetchWithRetry = async (slug, episode, retries = 3, delay = 1000) => {
+    const cacheKey = `${slug}-${episode}`;
+    if (iframeCache.has(cacheKey)) {
+      return iframeCache.get(cacheKey);
+    }
+    try {
+      const url = await fetchIframeUrlFromDesiDub(slug, episode);
+      if (url) {
+        iframeCache.set(cacheKey, url);
+      }
+      return url;
+    } catch (error) {
+      if (retries > 0) {
+        await new Promise((res) => setTimeout(res, delay));
+        return fetchWithRetry(slug, episode, retries - 1, delay * 2);
+      }
+      return null;
+    }
+  };
+
+  const fetchDesiDubUrl = async () => {
+    if (!animeDetails) return;
+
+    // Try with original title
+    let slugifiedName = slugify(animeDetails.title);
+    let iframeUrl = await fetchWithRetry(slugifiedName, currentEpisode);
+
+    // If not found and English title exists, try with that
+    if (!iframeUrl && animeDetails.title_english) {
+      const fallbackSlug = slugify(animeDetails.title_english);
+      iframeUrl = await fetchWithRetry(fallbackSlug, currentEpisode);
+    }
+
+    setStreamUrlDesiDub(iframeUrl || "");
+  };
+
+  fetchDesiDubUrl();
+
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchGogoAnimeUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframefromGogoAnime(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframefromGogoAnime(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlGogoAnime(iframeUrl || "");
+    };
+
+    fetchGogoAnimeUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetch9AnimeDubUrl = async () => {
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeFrom9AnimeDub(slugifiedName, currentEpisode);
+
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeFrom9AnimeDub(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrl9AnimeDub(iframeUrl || "");
+    };
+
+    fetch9AnimeDubUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchHanimeHentaiUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeUrlFromHanimeHentai(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeUrlFromHanimeHentai(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlHanimeHentai(iframeUrl || "");
+    };
+
+    fetchHanimeHentaiUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchWatchHentaiUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlWatchHentai(iframeUrl || "");
+    };
+
+    fetchWatchHentaiUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchWatchHentaiUrl = async () => {
+      // Try with original title
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
+
+      // If not found and English title exists, try with that
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlWatchHentai(iframeUrl || "");
+    };
+
+    fetchWatchHentaiUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchAniHQSubbedUrl = async () => {
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframefromAniHQAnimeSubbed(slugifiedName, currentEpisode);
+
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframefromAniHQAnimeSubbed(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlAniHQSubbed(iframeUrl || "");
+    };
+
+    fetchAniHQSubbedUrl();
+  }, [animeDetails, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchAniHQDubbedUrl = async () => {
+      let slugifiedName = slugify(animeDetails.title);
+      let iframeUrl = await fetchIframefromAniHQAnimeDubbed(slugifiedName, currentEpisode);
+
+      if (!iframeUrl && animeDetails.title_english) {
+        const fallbackSlug = slugify(animeDetails.title_english);
+        iframeUrl = await fetchIframefromAniHQAnimeDubbed(fallbackSlug, currentEpisode);
+      }
+
+      setStreamUrlAniHQDubbed(iframeUrl || "");
+    };
+
+    fetchAniHQDubbedUrl();
+  }, [animeDetails, currentEpisode]);
+
+
+  useEffect(() => {
+    if (!animeDetails || !animeDetails.title) return;
+
+    const fetchHindiDubCount = async () => {
+      try {
+        const slugifiedName = slugify(animeDetails.title);
+        const count = await fetchHindiDubEpisodeCount(slugifiedName, currentEpisode);
+        setHindiDubEpisodeCount(count);
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          setHindiDubEpisodeCount(0);
+        } else {
+          console.error("Error fetching Hindi Dub episode count:", error);
+
+        }
+      }
+    };
+
+    const fetchNineAnimeDubCount = async () => {
+      try {
+        const slugifiedName = slugify(animeDetails.title);
+        const count = await nineAnimeDubEpisodeCount(slugifiedName);
+        setNineAnimeDubEpisodeCount(count);
+      } catch (error) {
+        console.error("Error fetching 9Anime Dub episode count:", error);
+        setNineAnimeDubEpisodeCount(0);
+      }
+    };
+
+    fetchHindiDubCount();
+    fetchNineAnimeDubCount();
+  }, [animeDetails, currentEpisode]);
   const handleEpisodeChange = (epNum) => {
     setCurrentEpisode(epNum);
     navigate(`/watch/${animeId}/${epNum}`);
