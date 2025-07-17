@@ -1,0 +1,77 @@
+.pageWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 39vh;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+  padding: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  width: 320px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+.image {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.image[src] {
+  opacity: 1;
+}
+
+.refreshButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff7eb3, #ff758c);
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.refreshButton:hover {
+  background: linear-gradient(135deg, #ff5a99, #ff5179);
+  transform: scale(1.05);
+}
+
+.loader {
+  width: 100%;
+  height: 200px;
+  background: #f3f3f3;
+  border-radius: 12px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.errorBox {
+  background: #ffe6e6;
+  color: #d9534f;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+}
