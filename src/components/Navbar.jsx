@@ -119,7 +119,12 @@ const Navbar = () => {
       <Link to="/updates" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>UPDATES</Link>
       <Link to="/ongoing" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>ONGOING</Link>
       <Link to="/recent" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>RECENT</Link>
-    </div>
+      <button
+            className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
+            onClick={() => window.location.href = '/waifu'}
+          >
+            Waifu Anime
+          </button>    </div>
   )}
 </nav>
 
