@@ -12,6 +12,7 @@ import FilterPage from "./pages/FilterPage";
 import Random from "./components/Random";
 import Watch from "./pages/Watch";
 import NotFound from "./pages/NotFound";
+import Waifu from "./pages/waifu";
 
 
 const AppContent = () => {
@@ -30,41 +31,14 @@ const AppContent = () => {
         <Route path="/:category" element={<CategoryPage />} />
         <Route path="/filter" element={<FilterPage />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/waifu" element={<Waifu />} />
       </Routes>
       <Footer />
     </>
   );
 };
 
-import { useEffect } from "react";
-
 const App = () => {
-  useEffect(() => {
-    // Function to detect if devtools are open
-    let devtoolsOpen = false;
-    const threshold = 160;
-    const emitEvent = () => {
-      if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-        if (!devtoolsOpen) {
-          devtoolsOpen = true;
-          console.log("Devtools opened - reloading page");
-          window.location.reload();
-        }
-      } else {
-        devtoolsOpen = false;
-      }
-    };
-
-    window.addEventListener("resize", emitEvent);
-    // Also check periodically in case resize event is not triggered
-    const interval = setInterval(emitEvent, 1000);
-
-    return () => {
-      window.removeEventListener("resize", emitEvent);
-      clearInterval(interval);
-    };
-  }, []);
-
   return (
     <Router
       future={{
