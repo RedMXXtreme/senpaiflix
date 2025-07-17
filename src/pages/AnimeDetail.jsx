@@ -35,7 +35,7 @@ const AnimeDetail = () => {
         const data = response.data.data;
         const animeData = {
           title: data.title_english,
-          japaneseTitle: data.title_japanese,
+          romaji: data.title,
           synonyms: data.title_synonyms,
           description: data.synopsis,
           coverImage: data.images.jpg.large_image_url,
@@ -143,9 +143,9 @@ const AnimeDetail = () => {
         {/* Center */}
         <div className="flex-1 flex flex-col gap-4">
           <p className="text-sm text-gray-400">
-            Home &bull; {anime.type} &bull; {anime.title || anime.japaneseTitle}
+            Home &bull; {anime.type} &bull; {anime.romaji || anime.title}
           </p>
-          <h1 className="text-4xl font-extrabold">{anime.title || anime.japaneseTitle}</h1>
+          <h1 className="text-4xl font-extrabold">{anime.romaji || anime.title}</h1>
 
           {/* Badges */}
           <div className="flex flex-wrap gap-2 items-center text-xs font-semibold">
