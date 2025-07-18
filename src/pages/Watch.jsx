@@ -564,7 +564,18 @@ useEffect(() => {
     allowFullScreen
   ></iframe>
 ) : (
-  <p>Loading stream...</p>
+  <div className="fallback-message">
+          <video
+            src='https://v1.pinimg.com/videos/iht/expMp4/c6/5c/8d/c65c8d97c346fc9c5c6206f53c3e0802_720w.mp4'  //https://v1.pinimg.com/videos/iht/expMp4/c6/5c/8d/c65c8d97c346fc9c5c6206f53c3e0802_720w.mp4
+            alt="Anime not available"
+            autoPlay
+            loop
+            muted
+            className="fallback-image"
+          >
+            </video>
+          <p>Sorry video not available</p>
+        </div>
 )}
               </div>
 
@@ -710,49 +721,70 @@ useEffect(() => {
             </div>
           </div> 
         </div>
-         {focusMode && (
-              <div className="modal-overlay" onClick={() => setFocusMode(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>   
-                  {(server === "HD-1" && streamUrl) ||
-(server === "HD-2" && streamUrl1) ||
-(server === "HD-3" && streamUrl2) ||
-(server === "HD-4" && streamUrl3) ||
-(server === "DesiDub" && streamUrlDesiDub) ||
-(server === "GogoAnime" && streamUrlGogoAnime) ||
-(server === "9AnimeDub" && streamUrl9AnimeDub) ||
-(server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
-(server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
-(server === "HD_player" && streamUrlHanimeHentai) ||
-(server === "HD_player_2" && streamUrlWatchHentai) ? (
-  <iframe
-    key={`stream-${server}-${currentEpisode}`}
-    title={`Episode ${currentEpisode}`}
-    src={
-      server === "HD-1" ? streamUrl :
-      server === "HD-2" ? streamUrl1 :
-      server === "HD-3" ? streamUrl2 :
-      server === "HD-4" ? streamUrl3 :
-      server === "DesiDub" ? streamUrlDesiDub :
-      server === "GogoAnime" ? streamUrlGogoAnime :
-      server === "9AnimeDub" ? streamUrl9AnimeDub :
-      server === "AniHQSubbed" ? streamUrlAniHQSubbed :
-      server === "AniHQDubbed" ? streamUrlAniHQDubbed :
-      server === "HD_player" ? streamUrlHanimeHentai :
-      server === "HD_player_2" ? streamUrlWatchHentai : ""
-    }
-    width="100%"
-    height="100%"
-    frameBorder="0"
-    allowFullScreen
-    allow="autoplay; fullscreen"
-  ></iframe>
-) : (
-  <p>Loading stream...</p>
-)}   
-                  <button className="modal-close-btn" onClick={() => setFocusMode(false)}>×</button>
-                </div>
-              </div>
-            )}
+{focusMode && (
+  <div className="modal-overlay" onClick={() => setFocusMode(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>   
+      {(server === "HD-1" && streamUrl) ||
+      (server === "HD-2" && streamUrl1) ||
+      (server === "HD-3" && streamUrl2) ||
+      (server === "HD-4" && streamUrl3) ||
+      (server === "DesiDub" && streamUrlDesiDub) ||
+      (server === "GogoAnime" && streamUrlGogoAnime) ||
+      (server === "9AnimeDub" && streamUrl9AnimeDub) ||
+      (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
+      (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
+      (server === "HD_player" && streamUrlHanimeHentai) ||
+      (server === "HD_player_2" && streamUrlWatchHentai) ? (
+        <iframe
+          key={`stream-${server}-${currentEpisode}`}
+          title={`Episode ${currentEpisode}`}
+          src={
+            server === "HD-1"
+              ? streamUrl
+              : server === "HD-2"
+              ? streamUrl1
+              : server === "HD-3"
+              ? streamUrl2
+              : server === "HD-4"
+              ? streamUrl3
+              : server === "DesiDub"
+              ? streamUrlDesiDub
+              : server === "GogoAnime"
+              ? streamUrlGogoAnime
+              : server === "9AnimeDub"
+              ? streamUrl9AnimeDub
+              : server === "AniHQSubbed"
+              ? streamUrlAniHQSubbed
+              : server === "AniHQDubbed"
+              ? streamUrlAniHQDubbed
+              : server === "HD_player"
+              ? streamUrlHanimeHentai
+              : server === "HD_player_2"
+              ? streamUrlWatchHentai
+              : ""
+          }
+          width="100%"
+          height="100%"
+          frameBorder="0"
+          allowFullScreen
+          allow="autoplay; fullscreen"
+        ></iframe>
+      ) : (
+        <div className="fallback-message">
+          <img
+            src={animeDetails.images?.jpg?.large_image_url}
+            alt="Anime not available"
+            className="fallback-image"
+          />
+          <p>Sorry video not available</p>
+        </div>
+      )}
+      <button className="modal-close-btn" onClick={() => setFocusMode(false)}>
+        ×
+      </button>
+    </div>
+  </div>
+)}
 
            {/* Recommendation Section */}
                       <div className="recommendation-section">
