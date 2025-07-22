@@ -523,3 +523,24 @@ export async function fetchIframefromAniHQAnimeDubbed(animeName, episode) {
     return null;
   }
 }
+
+/**
+ * Fetch IMDb ID from imdbapi.dev API.
+ * @param {string} animeName - The anime name to search.
+ * @returns {Promise<string|null>} - The IMDb ID if found, otherwise null.
+ */
+
+
+export async function fetchImdbIdFromApi(animeName) {
+  try {
+    const query = encodeURIComponent(animeName);
+    const response = await axios.get(`https://api.imdbapi.dev/search/titles?query=${query}&limit=1`);
+    if (response.data && response.data.titles && response.data.titles.length > 0) {
+      return response.data.titles[0].id;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching IMDb ID from imdbapi.dev:", error);
+    return null;
+  }
+}
