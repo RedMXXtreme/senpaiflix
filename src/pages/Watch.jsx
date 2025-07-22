@@ -15,6 +15,7 @@ import {
   fetchIframeUrlFromWatchhentai,
   fetchIframefromAniHQAnimeSubbed,
   fetchIframefromAniHQAnimeDubbed,
+  fetchImdbIdFromApi,
 } from "../utils/streamingApis";
 import "./watch.css";
 import Countdowm from "../components/countdown";
@@ -43,6 +44,7 @@ const Watch = () => {
   const [streamUrlWatchHentai, setStreamUrlWatchHentai] = useState("");
   const [streamUrlAniHQSubbed, setStreamUrlAniHQSubbed] = useState("");
   const [streamUrlAniHQDubbed, setStreamUrlAniHQDubbed] = useState("");
+  const [streamUrlVidSrc, setStreamUrlVidSrc] = useState("");
   const [server, setServer] = useState("HD-1");
   const [episodeSearch, setEpisodeSearch] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -53,6 +55,7 @@ const Watch = () => {
   const [isNotFound, setIsNotFound] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [relations, setRelations] = useState([]); // NEW: for Prequel & Sequel
+
 
   const fetchEpisodesPage = async (page) => {
     try {
@@ -164,6 +167,27 @@ const Watch = () => {
       setStreamUrl3(url3);
     }
   }, [animeDetails, episodes, currentEpisode]);
+
+  useEffect(() => {
+    if (!animeDetails) return;
+
+    const fetchImdbIdAndSetUrl = async () => {
+      const animeName = animeDetails.title_english || animeDetails.title;
+      console.log("Fetching IMDb ID for anime:", animeName);
+      const imdbId = await fetchImdbIdFromApi(animeName);
+      console.log("Fetched IMDb ID:", imdbId);
+      if (imdbId) {
+        const imbdurl = `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&ds_lang=de`;
+        console.log("Constructed iframe URL:", imbdurl);
+        setStreamUrlVidSrc(imbdurl);
+      } else {
+        console.warn("No IMDb ID found, setting empty iframe URL");
+        setStreamUrlVidSrc("");
+      }
+    };
+
+    fetchImdbIdAndSetUrl();
+  }, [animeDetails]);
 
 useEffect(() => {
   const iframeCache = new Map();
@@ -541,7 +565,8 @@ useEffect(() => {
   (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
   (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
   (server === "HD_player" && streamUrlHanimeHentai) ||
-  (server === "HD_player_2" && streamUrlWatchHentai)
+  (server === "HD_player_2" && streamUrlWatchHentai) ||
+  (server === "VidSrc" && streamUrlVidSrc)
 ) ? (
   <iframe
     key={`stream-${server}-${currentEpisode}`}
@@ -557,7 +582,8 @@ useEffect(() => {
       server === "AniHQSubbed" ? streamUrlAniHQSubbed :
       server === "AniHQDubbed" ? streamUrlAniHQDubbed :
       server === "HD_player" ? streamUrlHanimeHentai :
-      server === "HD_player_2" ? streamUrlWatchHentai : ""
+      server === "HD_player_2" ? streamUrlWatchHentai : 
+      server === "VidSrc" ? streamUrlVidSrc : ''
     }
     width="100%"
     height="500px"
@@ -602,21 +628,21 @@ useEffect(() => {
       <div className="server-label">
         <span role="img" aria-label="keyboard">⌨️</span> SUB:
       </div>
-      <div className="server-buttons">
-        {genreString.includes("Hentai") ? (
-          <>
-            <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
-            <button className={server === "HD_player_2" ? "active" : ""} onClick={() => setServer("HD_player_2")}>HD_player 2</button>
-          </>
-        ) : (
-          <>
-            <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
-            <button className={server === "HD-2" ? "active" : ""} onClick={() => setServer("HD-2")}>HD-2</button>
-            <button className={server === "GogoAnime" ? "active" : ""} onClick={() => setServer("GogoAnime")}>zaza</button>
-            <button className={server === "AniHQSubbed" ? "active" : ""} onClick={() => setServer("AniHQSubbed")}>zoro</button>
-          </>
-        )}
-      </div>
+          <div className="server-buttons">
+            {genreString.includes("Hentai") ? (
+              <>
+                <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
+                <button className={server === "HD_player_2" ? "active" : ""} onClick={() => setServer("HD_player_2")}>HD_player 2</button>
+              </>
+            ) : (
+              <>
+                <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
+                <button className={server === "HD-2" ? "active" : ""} onClick={() => setServer("HD-2")}>HD-2</button>
+                <button className={server === "GogoAnime" ? "active" : ""} onClick={() => setServer("GogoAnime")}>zaza</button>
+                <button className={server === "AniHQSubbed" ? "active" : ""} onClick={() => setServer("AniHQSubbed")}>zoro</button>
+              </>
+            )}
+          </div>
     </div>
     {genreString.includes("Hentai") ? null : (
     <div className="server-row">
@@ -633,6 +659,8 @@ useEffect(() => {
             )}
             <button className={server === "9AnimeDub" ? "active" : ""} onClick={() => setServer("9AnimeDub")}>megg</button>
             <button className={server === "AniHQDubbed" ? "active" : ""} onClick={() => setServer("AniHQDubbed")}>bun</button>
+            <button className={server === "VidSrc" ? "active" : ""} onClick={() => setServer("VidSrc")}>VidSrc</button>
+
           </>
         
       </div>
@@ -734,7 +762,10 @@ useEffect(() => {
       (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
       (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
       (server === "HD_player" && streamUrlHanimeHentai) ||
-      (server === "HD_player_2" && streamUrlWatchHentai) ? (
+      (server === "HD_player_2" && streamUrlWatchHentai) ||
+      (server === "VidSrc" && streamUrlVidSrc)
+      
+      ? (
         <iframe
           key={`stream-${server}-${currentEpisode}`}
           title={`Episode ${currentEpisode}`}
@@ -761,6 +792,8 @@ useEffect(() => {
               ? streamUrlHanimeHentai
               : server === "HD_player_2"
               ? streamUrlWatchHentai
+              : server === "VidSrc"
+              ? streamUrlVidSrc
               : ""
           }
           width="100%"
@@ -825,7 +858,7 @@ useEffect(() => {
                           ))}
                         </div>
                       </div>
-        </div>
+                    </div>
       </div>
     </div>
   );
