@@ -87,9 +87,11 @@ const Imbd = () => {
                     />
                   </Link>
                 ) : (
+                  <Link to={`/imbd/${result.id}/${result.primaryTitle}`} className="block w-full h-full">
                   <div className="w-full h-full bg-gray-700 flex items-center justify-center text-gray-400">
                     No Image
                   </div>
+                </Link>
                 )}
               </div>
 
