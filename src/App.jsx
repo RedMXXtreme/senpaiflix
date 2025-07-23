@@ -13,7 +13,8 @@ import Random from "./components/Random";
 import Watch from "./pages/Watch";
 import NotFound from "./pages/NotFound";
 import Waifu from "./pages/waifu";
-
+import Imbd from "./pages/imbd"; // Adjusted import path
+import ImbdPlayer from "./pages/imbd_player";
 
 const AppContent = () => {
   const location = useLocation();
@@ -32,6 +33,9 @@ const AppContent = () => {
         <Route path="/filter" element={<FilterPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/waifu" element={<Waifu />} />
+        <Route path="/imbd" element={<Imbd />} />
+        <Route path="/imbd/:id/:primaryTitle" element={<ImbdPlayer />} />
+        {/* Add more routes as needed */}
       </Routes>
       <Footer />
     </>
