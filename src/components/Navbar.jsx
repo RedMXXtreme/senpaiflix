@@ -74,7 +74,12 @@ const Navbar = () => {
         </svg>
       </button>
     ) : (
-      <SearchBar className="w-64" placeholder="Search..." ariaLabel="Search" />
+      <div className="relative flex justify-center items-center max-w-xl mx-auto mb-4">
+            <SearchBar
+              placeholder="Search anime"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 backdrop-blur text-white focus:outline-none"
+            />
+          </div>
     )}
 
     {/* Random Icon */}
@@ -102,13 +107,12 @@ const Navbar = () => {
   {/* Mobile Search Bar (Separate layer) */}
   {isSearchOpen && windowWidth < 768 && (
     <div className="fixed top-16 inset-x-0 px-4 z-50">
-      <div className="bg-[#0f111a] w-full max-w-md mx-auto p-2 rounded shadow-lg">
-        <SearchBar
-          className="w-full"
-          placeholder="Search..."
-          ariaLabel="Search"
-        />
-      </div>
+      <div className="relative flex justify-center items-center max-w-xl mx-auto mb-4">
+            <SearchBar
+              placeholder="Search anime"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 backdrop-blur text-white focus:outline-none"
+            />
+          </div>
     </div>
   )}
 
@@ -124,7 +128,14 @@ const Navbar = () => {
             onClick={() => window.location.href = '/waifu'}
           >
             Waifu Anime
-          </button>    </div>
+          </button>    
+          <button
+            className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
+            onClick={() => window.location.href = '/imbd'}
+          >
+            IMDb Search
+          </button>
+          </div>
   )}
 </nav>
 
