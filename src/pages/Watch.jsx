@@ -177,7 +177,8 @@ const Watch = () => {
       const imdbId = await fetchImdbIdFromApi(animeName);
       console.log("Fetched IMDb ID:", imdbId);
       if (imdbId) {
-        const imbdurl = `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&ds_lang=de`;
+        let type = animeDetails.type?.toLowerCase() === "movie" ? "movie" : "tv";
+        const imbdurl = `https://vidsrc.xyz/embed/${type}?imdb=${imdbId}&ds_lang=de`;
         console.log("Constructed iframe URL:", imbdurl);
         setStreamUrlVidSrc(imbdurl);
       } else {
