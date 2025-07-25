@@ -74,8 +74,8 @@ const FrontPageNavbar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/new-releases" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
-            Top Airing
+          <Link to="/imbd" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
+            IMBD Player
           </Link>
         </li>
       </ul>
