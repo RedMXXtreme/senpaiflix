@@ -234,7 +234,7 @@ export async function fetchIframefromGogoAnime(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(getRandomDelay());
 
-    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://proxy.corsfix.com/?${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
@@ -316,7 +316,7 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     // Throttle request by waiting 1 second before API call
     await sleep(1000);
 
-    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
+    const proxyUrl = `https://proxy.corsfix.com/?${encodeURIComponent(episodeUrl)}`;
     const response = await axios.get(proxyUrl, {
       headers: {
         'User-Agent': getRandomUserAgent(),
