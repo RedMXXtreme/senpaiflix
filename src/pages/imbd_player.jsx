@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 
 const ImbdPlayer = () => {
   const { id } = useParams();
-  const [type, setType] = useState("tv");
+  const [type, setType] = useState("movie"); // default type
   const [season, setSeason] = useState("");
   const [episode, setEpisode] = useState("");
   const [domain, setDomain] = useState("vidsrc.xyz"); // default domain
