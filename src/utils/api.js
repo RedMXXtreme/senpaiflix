@@ -228,14 +228,6 @@ export async function fetchAnimeWithFilters(filters = {}, page = 1) {
     delete params.genre;
   }
 
-  // Ensure season and year are passed as query parameters if present
-  if (filters.season) {
-    params.season = filters.season;
-  }
-  if (filters.year) {
-    params.year = filters.year;
-  }
-
   while (attempt <= MAX_RETRIES) {
     try {
       const data = await fetchWithCache(url, params);
