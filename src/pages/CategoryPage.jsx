@@ -75,7 +75,7 @@ export default function CategoryPage() {
     }
   };
 
-  if (loading) return <div> <Loader /> {category}...</div>;
+  if (loading) return <div> <Loader /></div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -85,24 +85,24 @@ export default function CategoryPage() {
         {animeData.length === 0 && <p>No data available.</p>}
         {animeData.map((anime, index) => (
           <div
-            key={anime.mal_id ? anime.mal_id : `anime-${index}`}
+            key={anime.idMal ? anime.idMal : `anime-${index}`}
             className="flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/anime/${anime.mal_id}`)}
+            onClick={() => navigate(`/anime/${anime.idMal}`)}
             role="button"
             tabIndex={0}
             onKeyPress={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/anime/${anime.mal_id}`);
+                navigate(`/anime/${anime.idMal}`);
               }
             }}
           >
             <img
-              src={anime.images?.jpg?.image_url || anime.image_url || ''}
+              src={anime.coverImage?.large || anime.images?.jpg?.image_url || anime.images?.webp?.image_url || ''}
               alt={anime.title_english || anime.title || 'No Title Available'}
               className="w-36 h-52 object-cover rounded-md shadow-lg"
             />
-            <p className="text-sm mt-2 text-center truncate w-full" title={anime.title_english || anime.title}>
-              {anime.title_english || anime.title}
+            <p className="text-sm mt-2 text-center truncate w-full" title={anime.title?.english || anime.title?.romaji || anime.title?.native || 'No Title'}>
+              {anime.title?.english || anime.title?.romaji || anime.title?.native || 'No Title'}
             </p>
           </div>
         ))}
