@@ -198,14 +198,14 @@ export default function FilterPage() {
         {animeData.length === 0 && !loading && <p>No data available.</p>}
         {animeData.map((anime) => (
           <div
-            key={anime.idMal || anime.id}
+            key={anime.mal_id}
             className="flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/anime/${anime.id}`)}
+            onClick={() => navigate(`/anime/${anime.mal_id}`)}
             role="button"
             tabIndex={0}
             onKeyPress={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/anime/${anime.id}`);
+                navigate(`/anime/${anime.mal_id}`);
               }
             }}
           >
