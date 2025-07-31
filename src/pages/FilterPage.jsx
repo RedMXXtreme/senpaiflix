@@ -72,9 +72,11 @@ export default function FilterPage() {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+    // Convert genre value to number if not empty string
+    const newValue = name === 'genre' && value !== '' ? Number(value) : value;
     setFilters((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: newValue,
     }));
     setPage(1);
   };
@@ -117,6 +119,7 @@ export default function FilterPage() {
       setError('Failed to fetch filtered anime');
       setAnimeData([]);
       setLoading(false);
+      console.error('Error fetching filtered anime:', err);
     }
   };
 
@@ -195,14 +198,14 @@ export default function FilterPage() {
         {animeData.length === 0 && !loading && <p>No data available.</p>}
         {animeData.map((anime) => (
           <div
-            key={anime.mal_id}
+            key={anime.idMal || anime.id}
             className="flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/anime/${anime.mal_id}`)}
+            onClick={() => navigate(`/anime/${anime.id}`)}
             role="button"
             tabIndex={0}
             onKeyPress={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/anime/${anime.mal_id}`);
+                navigate(`/anime/${anime.id}`);
               }
             }}
           >
