@@ -1,5 +1,28 @@
 import { sendAniListQuery } from './anilistApi.js';
 
+const JIKAN_API_BASE_URL = 'https://api.jikan.moe/v4';
+
+// Simple in-memory cache for fetchWithCache
+const cache = new Map();
+
+async function fetchWithCache(url, params = {}) {
+  // Create a cache key based on url and params
+  const key = url + JSON.stringify(params);
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+  // Build query string from params
+  const queryString = new URLSearchParams(params).toString();
+  const fetchUrl = queryString ? `${url}?${queryString}` : url;
+  const response = await fetch(fetchUrl);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const data = await response.json();
+  cache.set(key, data);
+  return data;
+}
+
 const MAX_RETRIES = 3;
 const RETRY_DELAY_BASE = 1000; // base delay in ms for exponential backoff
 
