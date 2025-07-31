@@ -1,27 +1,7 @@
 import axios from "axios";
 import { slugify } from "./slugify";
+import { useProxyQueue, useJikanQueue } from "./throttle";
 
-const userAgents = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
-  "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
-];
-
-function getRandomUserAgent() {
-  const index = Math.floor(Math.random() * userAgents.length);
-  return userAgents[index];
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function getRandomDelay(min = 500, max = 3000) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 /**
  * Validate animeId to be a positive integer string.
@@ -45,18 +25,16 @@ export async function fetchAnimeDetailsWithCache(animeId) {
   let delay = 1000; // start with 1 second
   while (retries > 0) {
     try {
-      // Throttle request by waiting 1 second before API call
-      await sleep(1000);
+      // Removed sleep delay before API call
 
       // Fetch anime details
-      const animeResponse = await axios.get(`https://api.jikan.moe/v4/anime/${animeId}`);
+      const animeResponse = await useJikanQueue(() => axios.get(`https://api.jikan.moe/v4/anime/${animeId}`));
       const animeData = animeResponse.data.data;
 
-      // Throttle request by waiting 1 second before API call
-      await sleep(1000);
+      // Removed sleep delay before API call
 
       // Fetch episodes list
-      const episodesResponse = await axios.get(`https://api.jikan.moe/v4/anime/${animeId}/episodes`);
+      const episodesResponse = await useJikanQueue(() => axios.get(`https://api.jikan.moe/v4/anime/${animeId}/episodes`));
       const episodesData = episodesResponse.data.data;
 
       const result = {
@@ -68,7 +46,7 @@ export async function fetchAnimeDetailsWithCache(animeId) {
     } catch (error) {
       if (error.response && error.response.status === 429) {
         console.warn("Rate limited by Jikan API, retrying after delay...");
-        await sleep(delay);
+        await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2; // exponential backoff
         retries--;
       } else {
@@ -94,13 +72,13 @@ export async function fetchAnimeRecommendationsWithCache(animeId) {
   let delay = 1000;
   while (retries > 0) {
     try {
-      const response = await axios.get(`https://api.jikan.moe/v4/anime/${animeId}/recommendations`);
+      const response = await useJikanQueue(() => axios.get(`https://api.jikan.moe/v4/anime/${animeId}/recommendations`));
       const recommendations = response.data.data;
       return recommendations;
     } catch (error) {
       if (error.response && error.response.status === 429) {
         console.warn("Rate limited by Jikan API (recommendations), retrying after delay...");
-        await sleep(delay);
+        await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2;
         retries--;
       } else {
@@ -112,7 +90,6 @@ export async function fetchAnimeRecommendationsWithCache(animeId) {
   console.error("Failed to fetch anime recommendations after retries due to rate limiting.");
   return [];
 }
-
 
 /**
  * Fetch English title of anime by ID using Jikan API.
@@ -143,15 +120,12 @@ export function getMegaplayStreamUrl(hianimeEpId, language) {
   return `https://megaplay.buzz/stream/s-2/${hianimeEpId}/sub`;
 }
 
-
-
 /**
  * Get stream URL from 2anime.xyz embed endpoint.
  * @param {string} animeName - Anime name in English (URL friendly).
  * @param {number} episodeNumber - Episode number.
  * @returns {string} - Embed URL.
  */
-
 export function get2AnimeEmbedUrl(animeName, episodeNumber) {
   // Use slugify function from slugify.js to convert animeName to URL friendly format
   const formattedName = slugify(animeName);
@@ -187,15 +161,10 @@ export async function fetchIframeUrlFromDesiDub(animeName, episode) {
     const episodeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
     console.log("Fetching AnimeWorld iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 secon before API calld
-    await sleep(getRandomDelay());
+    // Removed sleep and getRandomDelay usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await useProxyQueue(() => axios.get(proxyUrl));
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -231,15 +200,10 @@ export async function fetchIframefromGogoAnime(animeName, episode) {
     const episodeUrl = `https://9anime.org.lv/${animeName}-episode-${episode}/`;
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(getRandomDelay());
+    // Removed sleep and getRandomDelay usage
 
-    const proxyUrl = `https://api.cors.lol/?url=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
+    const response = await useProxyQueue(() => axios.get(proxyUrl));
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -269,15 +233,10 @@ export async function fetchHindiDubEpisodeCount(animeName, episode) {
   try {
     const animeUrl = `https://www.desidubanime.me/watch/${animeName}-episode-${episode}/`;
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(getRandomDelay());
+    // Removed sleep and getRandomDelay usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(animeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await useProxyQueue(() => axios.get(proxyUrl));
     const html = response.data;
 
     // Regex to find all episode links for Hindi dub episodes
@@ -313,15 +272,10 @@ export async function fetchIframeFrom9AnimeDub(animeName, episode) {
     const episodeUrl = `https://9anime.org.lv/${animeName}-dub-episode-${episode}/`;
     console.log("Fetching 9anime dub iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    // Removed sleep usage, replaced with direct call
 
-    const proxyUrl = `https://api.cors.lol/?url=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
+    const response = await axios.get(proxyUrl);
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -359,15 +313,10 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     // Ensure the episodeUrl is properly formatted
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    // Removed sleep usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await axios.get(proxyUrl);
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -405,15 +354,10 @@ export async function fetchIframeUrlFromWatchhentai(animeName, episode) {
     // Ensure the episodeUrl is properly formatted
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    // Removed sleep usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await useProxyQueue(() => axios.get(proxyUrl));
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -422,7 +366,7 @@ export async function fetchIframeUrlFromWatchhentai(animeName, episode) {
     if (iframeSrcMatch && iframeSrcMatch[1]) {
       console.log("Iframe URL found:", iframeSrcMatch[1]);
       watchhentai.set(cacheKey, iframeSrcMatch[1]);
-      return iframeSrcMatch[1];
+      return watchhentai.get(cacheKey);
     }
     console.warn("Iframe URL not found in animeworld-india page.");
     return null;
@@ -431,7 +375,6 @@ export async function fetchIframeUrlFromWatchhentai(animeName, episode) {
     return null;
   }
 }
-
 
 /**
  * Fetch iframe URL from AniHQ-india episode page by scraping iframe src.
@@ -451,15 +394,10 @@ export async function fetchIframefromAniHQAnimeSubbed(animeName, episode) {
     const episodeUrl = `https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/`;  //https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    // Removed sleep usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await axios.get(proxyUrl);
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -477,7 +415,6 @@ export async function fetchIframefromAniHQAnimeSubbed(animeName, episode) {
     return null;
   }
 }
-
 
 /**
  * Fetch iframe URL from AniHQDub-india episode page by scraping iframe src.
@@ -497,15 +434,10 @@ export async function fetchIframefromAniHQAnimeDubbed(animeName, episode) {
     const episodeUrl = `https://anihq.to/watch/${animeName}-episode-${episode}-english-dubbed/`;  //https://anihq.to/watch/${animeName}-episode-${episode}-english-subbed/
     console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
 
-    // Throttle request by waiting 1 second before API call
-    await sleep(1000);
+    // Removed sleep usage
 
     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(episodeUrl)}`;
-    const response = await axios.get(proxyUrl, {
-      headers: {
-        'User-Agent': getRandomUserAgent(),
-      },
-    });
+    const response = await axios.get(proxyUrl);
     console.log("Response status:", response.status);
     const html = response.data;
 
@@ -529,12 +461,10 @@ export async function fetchIframefromAniHQAnimeDubbed(animeName, episode) {
  * @param {string} animeName - The anime name to search.
  * @returns {Promise<string|null>} - The IMDb ID if found, otherwise null.
  */
-
-
 export async function fetchImdbIdFromApi(animeName) {
   try {
     const query = encodeURIComponent(animeName);
-    const response = await axios.get(`https://api.imdbapi.dev/search/titles?query=${query}&limit=1`);
+    const response = await useProxyQueue(() => axios.get(`https://api.imdbapi.dev/search/titles?query=${query}&limit=1`));
     if (response.data && response.data.titles && response.data.titles.length > 0) {
       return response.data.titles[0].id;
     }
