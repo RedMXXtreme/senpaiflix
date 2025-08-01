@@ -355,7 +355,6 @@ html {
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
-  background-color: black;
 }
 
 .video-player iframe {
