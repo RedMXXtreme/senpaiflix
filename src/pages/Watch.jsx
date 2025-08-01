@@ -591,18 +591,12 @@ useEffect(() => {
     allowFullScreen
   ></iframe>
 ) : (
-  <div className="fallback-message">
-          <video
-            src='https://v1.pinimg.com/videos/iht/expMp4/c6/5c/8d/c65c8d97c346fc9c5c6206f53c3e0802_720w.mp4'  //https://v1.pinimg.com/videos/iht/expMp4/c6/5c/8d/c65c8d97c346fc9c5c6206f53c3e0802_720w.mp4
-            alt="Anime not available"
-            autoPlay
-            loop
-            muted
-            className="fallback-image"
-          >
-            </video>
-          <p>Sorry video not available</p>
-        </div>
+  <div className="playerLoading" style={{ zIndex: 2 }}>
+                  <img src="https://anisnatch.p1y.top/assets/img/loading.gif?v1.0.8"
+                  />
+                  <p style={{position:'relative', left:'188px',
+                  }}>No Stream Available</p>
+                  </div>
 )}
               </div>
 
@@ -804,14 +798,12 @@ useEffect(() => {
           allow="autoplay; fullscreen"
         ></iframe>
       ) : (
-        <div className="fallback-message">
-          <img
-            src={animeDetails.images?.jpg?.large_image_url}
-            alt="Anime not available"
-            className="fallback-image"
-          />
-          <p>Sorry video not available</p>
-        </div>
+        <div className="playerLoading" style={{ zIndex: 2 }}>
+                  <img src="https://anisnatch.p1y.top/assets/img/loading.gif?v1.0.8"
+                  />
+                  <p style={{position:'relative', left:'188px',
+                  }}>No Stream Available</p>
+                  </div>
       )}
       <button className="modal-close-btn" onClick={() => setFocusMode(false)}>
         ×
