@@ -15,32 +15,33 @@
     return proxies[Math.floor(Math.random() * proxies.length)];
   }
 
-  /**
-   * Fetch content using proxy with retry logic
-   * @param {string} url - The URL to fetch
-   * @returns {Promise<any>} - The response data
-   */
-  async function fetchWithProxyRetry(url) {
-    const proxy1 = `https://aniversehd.com/api/v1/streamingProxy?url=${encodeURIComponent(url)}`;
-    const proxy2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
-    
-    // Try the first proxy
-    try {
-      const response = await useProxyQueue(() => axios.get(proxy1));
-      return response;
-    } catch (error) {
-      console.warn(`Proxy ${proxy1} failed, trying fallback proxy...`);
-    }
-    
-    // Retry with the second proxy
-    try {
-      const response = await useProxyQueue(() => axios.get(proxy2));
-      return response;
-    } catch (error) {
-      console.error(`Fallback proxy ${proxy2} also failed`);
-      throw error;
-    }
+/**
+ * Fetch content using proxy with retry logic
+ * @param {string} url - The URL to fetch
+ * @returns {Promise<any>} - The response data
+ */
+async function fetchWithProxyRetry(url) {
+  const proxy1 = `https://aniversehd.com/api/v1/streamingProxy?url=${encodeURIComponent(url)}`;
+  const proxy2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+  
+  // Try the first proxy
+  try {
+    const response = await useProxyQueue(() => axios.get(proxy1));
+    return response;
+  } catch (error) {
+    console.warn(`Proxy ${proxy1} failed, trying fallback proxy...`);
+    // Immediately try the second proxy without additional delay
   }
+  
+  // Retry with the second proxy
+  try {
+    const response = await useProxyQueue(() => axios.get(proxy2));
+    return response;
+  } catch (error) {
+    console.error(`Fallback proxy ${proxy2} also failed`);
+    throw error;
+  }
+}
 
 
   /**
