@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Waifu from "./pages/waifu";
 import Imbd from "./pages/imbd"; // Adjusted import path
 import ImbdPlayer from "./pages/imbd_player";
+import SecurityProvider from "./components/SecurityProvider";
 
 const AppContent = () => {
   const location = useLocation();
@@ -44,6 +45,7 @@ const AppContent = () => {
 
 const App = () => {
   return (
+    <SecurityProvider>
     <Router
       future={{
         v7_startTransition: true,
@@ -52,7 +54,9 @@ const App = () => {
     >
       <AppContent />
     </Router>
+      </SecurityProvider>
   );
 };
 
 export default App;
+
