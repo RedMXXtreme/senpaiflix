@@ -10,7 +10,7 @@
   function getRandomProxyUrl(url) {
     const proxies = [
       `https://aniversehd.com/api/v1/streamingProxy?url=${encodeURIComponent(url)}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+      `https://proxy.vidnest.fun/ts-proxy?url=${encodeURIComponent(url)}`
     ];
     return proxies[Math.floor(Math.random() * proxies.length)];
   }
@@ -507,3 +507,4 @@ async function fetchWithProxyRetry(url) {
       return null;
     }
   }
+
