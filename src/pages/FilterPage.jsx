@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchAdvancedBrowse } from '../utils/anilistApi';
 import Loader from '../components/Loader';
 import PageSlider from '../components/PageSlider';
@@ -49,6 +49,7 @@ const SORT_OPTIONS = [
 
 export default function FilterPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [animeData, setAnimeData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -65,6 +66,45 @@ export default function FilterPage() {
     sort: 'POPULARITY_DESC'
   });
 
+  // Initialize filters from URL on component mount
+  useEffect(() => {
+    const urlFilters = {
+      search: searchParams.get('search') || '',
+      genres: searchParams.get('genres') ? searchParams.get('genres').split(',') : [],
+      year: searchParams.get('year') || '',
+      season: searchParams.get('season') || '',
+      format: searchParams.get('format') || '',
+      sort: searchParams.get('sort') || 'POPULARITY_DESC'
+    };
+    
+    const urlPage = searchParams.get('page');
+    if (urlPage) {
+      setCurrentPage(parseInt(urlPage));
+    }
+    
+    setFilters(urlFilters);
+    
+    // Show advanced filters if genres are selected
+    if (urlFilters.genres.length > 0) {
+      setShowAdvanced(true);
+    }
+  }, []);
+
+  // Update URL when filters or page changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.set('search', filters.search);
+    if (filters.genres.length > 0) params.set('genres', filters.genres.join(','));
+    if (filters.year) params.set('year', filters.year);
+    if (filters.season) params.set('season', filters.season);
+    if (filters.format) params.set('format', filters.format);
+    if (filters.sort && filters.sort !== 'POPULARITY_DESC') params.set('sort', filters.sort);
+    if (currentPage > 1) params.set('page', currentPage.toString());
+    
+    setSearchParams(params, { replace: true });
+  }, [filters, currentPage, setSearchParams]);
+
   useEffect(() => {
     fetchData();
   }, [currentPage, filters]);
@@ -74,7 +114,7 @@ export default function FilterPage() {
     setError(null);
     try {
       const apiFilters = {};
-
+      
       if (filters.search) apiFilters.search = filters.search;
       if (filters.format) apiFilters.format = [filters.format];
       if (filters.season) apiFilters.season = filters.season;
@@ -115,134 +155,208 @@ export default function FilterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0b1622] to-[#0f1b2d] text-white">
-      {/* --- Filter Header --- */}
-      <div className="sticky top-0 z-30 bg-[#111b29]/95 backdrop-blur-lg border-b border-white/10 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
-          <h1 className="text-2xl font-semibold text-white tracking-wide flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
-            Advanced Filters
-          </h1>
+    <div className="min-h-screen bg-[#0b1622] text-white">
+      {/* Filter Bar */}
+      <div className="bg-[#151f2e] border-b border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Genres */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Genres</label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="w-full px-4 py-2.5 bg-[#0b1622] rounded border border-gray-600 hover:border-blue-500 focus:outline-none text-left flex items-center justify-between"
+                >
+                  <span className={filters.genres.length > 0 ? 'text-white' : 'text-gray-500'}>
+                    {filters.genres.length > 0 ? `${filters.genres.length} selected` : 'Any'}
+                  </span>
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-          {/* Filter Controls */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {/* Year */}
-            <select
-              value={filters.year}
-              onChange={(e) => handleFilterChange('year', e.target.value)}
-              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
-            >
-              {YEARS.map(year => <option key={year.value} value={year.value}>{year.label}</option>)}
-            </select>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Year</label>
+              <div className="relative">
+                <select
+                  value={filters.year}
+                  onChange={(e) => handleFilterChange('year', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#0b1622] rounded border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:outline-none appearance-none text-white"
+                >
+                  {YEARS.map(year => (
+                    <option key={year.value} value={year.value} className="bg-[#0b1622]">
+                      {year.label}
+                    </option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
 
             {/* Season */}
-            <select
-              value={filters.season}
-              onChange={(e) => handleFilterChange('season', e.target.value)}
-              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
-            >
-              {SEASONS.map(season => <option key={season.value} value={season.value}>{season.label}</option>)}
-            </select>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Season</label>
+              <div className="relative">
+                <select
+                  value={filters.season}
+                  onChange={(e) => handleFilterChange('season', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#0b1622] rounded border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:outline-none appearance-none text-white"
+                >
+                  {SEASONS.map(season => (
+                    <option key={season.value} value={season.value} className="bg-[#0b1622]">
+                      {season.label}
+                    </option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
 
             {/* Format */}
-            <select
-              value={filters.format}
-              onChange={(e) => handleFilterChange('format', e.target.value)}
-              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
-            >
-              {FORMATS.map(format => <option key={format.value} value={format.value}>{format.label}</option>)}
-            </select>
-
-            {/* Sort */}
-            <select
-              value={filters.sort}
-              onChange={(e) => handleFilterChange('sort', e.target.value)}
-              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
-            >
-              {SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </div>
-
-          {/* Genre Toggle */}
-          <div className="flex justify-between items-center mt-2">
-            <p className="text-sm text-gray-400">
-              {filters.genres.length > 0 ? `${filters.genres.length} genres selected` : 'No genres selected'}
-            </p>
-            <button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
-            >
-              {showAdvanced ? 'Hide Genres' : 'Show Genres'}
-            </button>
-          </div>
-
-          {/* Genre Selector */}
-          {showAdvanced && (
-            <div className="flex flex-wrap gap-2 mt-3 max-h-[200px] overflow-y-auto pb-2">
-              {GENRES.map((genre) => (
-                <button
-                  key={genre}
-                  onClick={() => handleGenreToggle(genre)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    filters.genres.includes(genre)
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                      : 'bg-[#1a2332] hover:bg-[#223043] text-gray-300'
-                  }`}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Format</label>
+              <div className="relative">
+                <select
+                  value={filters.format}
+                  onChange={(e) => handleFilterChange('format', e.target.value)}
+                  className="w-full px-4 py-2.5 bg-[#0b1622] rounded border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:outline-none appearance-none text-white"
                 >
-                  {genre}
-                </button>
-              ))}
+                  {FORMATS.map(format => (
+                    <option key={format.value} value={format.value} className="bg-[#0b1622]">
+                      {format.label}
+                    </option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Filters - Genre Selection */}
+          {showAdvanced && (
+            <div className="mt-4 p-4 bg-[#0b1622] rounded border border-gray-700">
+              <div className="flex flex-wrap gap-2">
+                {GENRES.map(genre => (
+                  <button
+                    key={genre}
+                    onClick={() => handleGenreToggle(genre)}
+                    className={`px-4 py-2 rounded text-sm transition-colors ${
+                      filters.genres.includes(genre)
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-[#151f2e] hover:bg-[#1a2332] text-gray-300'
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Sort and Filter Toggle */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Sort by:</span>
+              <select
+                value={filters.sort}
+                onChange={(e) => handleFilterChange('sort', e.target.value)}
+                className="px-3 py-1.5 bg-[#0b1622] rounded border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:outline-none text-sm text-white"
+              >
+                {SORT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value} className="bg-[#0b1622]">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center gap-2 px-4 py-1.5 bg-[#0b1622] hover:bg-[#151f2e] rounded border border-gray-600 text-sm transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              {showAdvanced ? 'Hide' : 'Show'} Filters
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* --- Anime Results --- */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      {/* Results */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="flex justify-center py-32">
+          <div className="flex justify-center items-center py-20">
             <Loader />
           </div>
         ) : error ? (
-          <div className="text-center py-32 text-red-400 text-lg">{error}</div>
+          <div className="text-center py-20">
+            <p className="text-red-500 text-lg">{error}</p>
+          </div>
         ) : (
           <>
-            {animeData.length > 0 && (
-              <p className="text-sm text-gray-400 mb-4">
-                {animeData.length} results • Page {currentPage} of {totalPages}
-              </p>
-            )}
+            <div className="mb-4 text-gray-400 text-sm">
+              {animeData.length > 0 && (
+                <p>{animeData.length} results • Page {currentPage} of {totalPages}</p>
+              )}
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
               {animeData.length === 0 ? (
-                <div className="col-span-full text-center py-20 text-gray-400 text-lg">
-                  No anime found. Try adjusting filters.
+                <div className="col-span-full text-center py-20">
+                  <p className="text-gray-400 text-lg">No anime found. Try adjusting your filters.</p>
                 </div>
               ) : (
                 animeData.map((anime) => (
                   <div
                     key={anime.id}
+                    className="flex flex-col cursor-pointer group"
                     onClick={() => navigate(`/anime/${anime.id}`)}
-                    className="group relative bg-[#111b29] rounded-xl overflow-hidden shadow-md hover:shadow-lg hover:scale-[1.03] transition-all cursor-pointer"
                   >
-                    <img
-                      src={anime.coverImage?.large || anime.coverImage?.extraLarge}
-                      alt={anime.title?.romaji}
-                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-
-                    <div className="absolute top-2 right-2 bg-black/70 text-xs px-2 py-1 rounded">
-                      ⭐ {anime.averageScore ?? 'N/A'}
+                    <div className="relative overflow-hidden rounded-lg shadow-lg">
+                      <img
+                        src={anime.coverImage?.large || anime.coverImage?.extraLarge}
+                        alt={anime.title?.english || anime.title?.romaji}
+                        className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                      {anime.averageScore && (
+                        <div className="absolute top-2 right-2 bg-black bg-opacity-75 px-2 py-1 rounded text-sm font-bold">
+                          ⭐ {anime.averageScore}%
+                        </div>
+                      )}
+                      {anime.format && (
+                        <div className="absolute top-2 left-2 bg-blue-600 bg-opacity-90 px-2 py-1 rounded text-xs font-medium">
+                          {anime.format}
+                        </div>
+                      )}
                     </div>
-
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <h3 className="text-sm font-medium truncate text-white">
+                    <div className="mt-2">
+                      <p className="text-sm font-medium line-clamp-2" title={anime.title?.english || anime.title?.romaji}>
                         {anime.title?.english || anime.title?.romaji}
-                      </h3>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {anime.seasonYear || ''} {anime.episodes ? `• ${anime.episodes} eps` : ''}
                       </p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                        {anime.seasonYear && <span>{anime.seasonYear}</span>}
+                        {anime.episodes && <span>• {anime.episodes} eps</span>}
+                      </div>
+                      {anime.genres && anime.genres.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {anime.genres.slice(0, 3).map((genre, idx) => (
+                            <span key={idx} className="text-xs bg-[#151f2e] px-2 py-0.5 rounded">
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -250,13 +364,11 @@ export default function FilterPage() {
             </div>
 
             {animeData.length > 0 && (
-              <div className="mt-10">
-                <PageSlider
-                  page={currentPage}
-                  totalPages={totalPages}
-                  handlePageChange={handlePageChange}
-                />
-              </div>
+              <PageSlider
+                page={currentPage}
+                totalPages={totalPages}
+                handlePageChange={handlePageChange}
+              />
             )}
           </>
         )}
