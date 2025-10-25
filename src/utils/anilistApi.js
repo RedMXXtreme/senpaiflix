@@ -732,3 +732,48 @@ export const estimateEpisodes = (format, status) => {
       return Array.from({ length: 12 }, (_, i) => i + 1);
   }
 };
+
+// Fetch a random anime from AniList (optimized for speed)
+export const fetchRandomAnime = async () => {
+  // Generate a random ID between 1 and 150000 (AniList's approximate range)
+  // We'll try a few times to find a valid anime
+  const maxAttempts = 5;
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const randomId = Math.floor(Math.random() * 150000) + 1;
+    
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          title {
+            romaji
+            english
+          }
+        }
+      }
+    `;
+
+    try {
+      const data = await sendAniListQuery(query, { id: randomId });
+      
+      if (data && data.Media && data.Media.id) {
+        console.log(`Random anime found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id})`);
+        return data.Media;
+      }
+    } catch (error) {
+      // ID doesn't exist, try next attempt
+      continue;
+    }
+  }
+  
+  // If all attempts fail, use a fallback popular anime
+  console.warn('Could not find random anime after multiple attempts, using fallback');
+  return { 
+    id: 16498, // Attack on Titan
+    title: {
+      romaji: 'Shingeki no Kyojin',
+      english: 'Attack on Titan'
+    }
+  };
+};
