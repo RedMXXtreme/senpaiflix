@@ -282,7 +282,7 @@ export const fetchAnimeWithFilters = async (filters, page = 1) => {
 
   const variables = {
     page,
-    genre: filters.genre ? undefined : filters.genre, // AniList uses genre names, not IDs
+    genre: filters.genre ? undefined : filters.genre,
     type: filters.type ? filters.type.toUpperCase() : undefined,
     status: filters.status ? filters.status.toUpperCase() : undefined,
     rating: filters.rating ? filters.rating.toUpperCase() : undefined,
@@ -293,6 +293,155 @@ export const fetchAnimeWithFilters = async (filters, page = 1) => {
 
   const data = await sendAniListQuery(query, variables);
   return data.Page.media;
+};
+
+export const fetchAdvancedBrowse = async (filters = {}, page = 1) => {
+  const query = `
+    query (
+      $page: Int = 1
+      $id: Int
+      $type: MediaType
+      $isAdult: Boolean = false
+      $search: String
+      $format: [MediaFormat]
+      $status: MediaStatus
+      $countryOfOrigin: CountryCode
+      $source: MediaSource
+      $season: MediaSeason
+      $seasonYear: Int
+      $year: String
+      $onList: Boolean
+      $yearLesser: FuzzyDateInt
+      $yearGreater: FuzzyDateInt
+      $episodeLesser: Int
+      $episodeGreater: Int
+      $durationLesser: Int
+      $durationGreater: Int
+      $chapterLesser: Int
+      $chapterGreater: Int
+      $volumeLesser: Int
+      $volumeGreater: Int
+      $licensedBy: [Int]
+      $isLicensed: Boolean
+      $genres: [String]
+      $excludedGenres: [String]
+      $tags: [String]
+      $excludedTags: [String]
+      $minimumTagRank: Int
+      $sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]
+    ) {
+      Page(page: $page, perPage: 20) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+          perPage
+        }
+        media(
+          id: $id
+          type: $type
+          season: $season
+          format_in: $format
+          status: $status
+          countryOfOrigin: $countryOfOrigin
+          source: $source
+          search: $search
+          onList: $onList
+          seasonYear: $seasonYear
+          startDate_like: $year
+          startDate_lesser: $yearLesser
+          startDate_greater: $yearGreater
+          episodes_lesser: $episodeLesser
+          episodes_greater: $episodeGreater
+          duration_lesser: $durationLesser
+          duration_greater: $durationGreater
+          chapters_lesser: $chapterLesser
+          chapters_greater: $chapterGreater
+          volumes_lesser: $volumeLesser
+          volumes_greater: $volumeGreater
+          licensedById_in: $licensedBy
+          isLicensed: $isLicensed
+          genre_in: $genres
+          genre_not_in: $excludedGenres
+          tag_in: $tags
+          tag_not_in: $excludedTags
+          minimumTagRank: $minimumTagRank
+          sort: $sort
+          isAdult: $isAdult
+        ) {
+          id
+          title {
+            romaji
+            english
+            native
+          }
+          coverImage {
+            large
+            extraLarge
+            color
+          }
+          bannerImage
+          startDate {
+            year
+            month
+            day
+          }
+          endDate {
+            year
+            month
+            day
+          }
+          description
+          season
+          seasonYear
+          type
+          format
+          status
+          episodes
+          duration
+          chapters
+          volumes
+          genres
+          isAdult
+          averageScore
+          popularity
+          nextAiringEpisode {
+            airingAt
+            timeUntilAiring
+            episode
+          }
+          studios(isMain: true) {
+            edges {
+              isMain
+              node {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    page,
+    type: 'ANIME',
+    isAdult: false,
+    ...filters
+  };
+
+  // Remove undefined values
+  Object.keys(variables).forEach(key => 
+    (variables[key] === undefined || variables[key] === null || variables[key] === '') && delete variables[key]
+  );
+
+  const data = await sendAniListQuery(query, variables);
+  return {
+    media: data.Page.media,
+    pageInfo: data.Page.pageInfo
+  };
 };
 
 export const fetchAnimeDetail = async (id) => {
@@ -415,6 +564,7 @@ export const fetchAnimeSearch = async (search) => {
   const data = await sendAniListQuery(query, variables);
   return data.Page.media;
 };
+
 export const fetchAnimeRecommendations = async (id) => {
   const query = `
     query ($id: Int) {
