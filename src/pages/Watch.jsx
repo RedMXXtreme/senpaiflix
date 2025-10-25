@@ -332,27 +332,48 @@ export default function Watch() {
       </div>
 {/* --- Recommendations Section --- */}
 {recommendations.length > 0 && (
-  <div className="relative max-w-[1400px] mx-auto px-6 py-8 mt-10 bg-[#141414]/80 backdrop-blur-lg rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-    <h2 className="text-2xl font-bold mb-6 text-white tracking-wide flex items-center gap-2">
+  <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 py-8 mt-10 
+                  bg-[#141414]/80 backdrop-blur-lg rounded-2xl 
+                  border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+    <h2 className="text-xl sm:text-2xl font-bold mb-6 text-white tracking-wide flex items-center gap-2">
       <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
       Recommendations
     </h2>
 
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6" style={{gridTemplateColumns:'repeat(8, minmax(0, 2fr))'}}>
+    {/* Responsive grid setup */}
+    <div
+      className="
+        grid gap-4 sm:gap-5 md:gap-6
+        grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8
+      "
+    >
       {recommendations.map((rec) => (
         <Link
           key={rec.id}
           to={`/anime/${rec.id}`}
-          className="group relative overflow-hidden rounded-xl bg-[#1c1c1c] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+          className="
+            group relative overflow-hidden rounded-xl 
+            bg-[#1c1c1c] transition-all duration-300 
+            hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]
+          "
         >
           <div className="relative">
             <img
               src={rec.cover}
               alt={rec.title}
-              className="w-full h-56 object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
+              className="
+                w-full h-48 sm:h-56 md:h-60 lg:h-64 
+                object-cover rounded-xl 
+                transition-transform duration-500 group-hover:scale-110
+              "
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute bottom-2 left-2 right-2 text-center text-sm font-semibold text-white">
+            <div className="absolute inset-0 bg-gradient-to-t 
+                            from-black/80 via-black/20 to-transparent 
+                            opacity-0 group-hover:opacity-100 
+                            transition-opacity duration-500"></div>
+            <div className="absolute bottom-2 left-2 right-2 
+                            text-center text-xs sm:text-sm md:text-base 
+                            font-semibold text-white leading-tight">
               {rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title}
             </div>
           </div>
@@ -365,4 +386,5 @@ export default function Watch() {
     </div>
   );
 }
+
 
