@@ -134,8 +134,10 @@ const SeasonSection = ({ animeId }) => {
           <ChevronRight size={20} />
         </button>
       </div>
+      
     </div>
   );
 };
 
 export default SeasonSection;
+
