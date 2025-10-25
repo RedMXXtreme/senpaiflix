@@ -59,12 +59,12 @@ const FrontPageNavbar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/filter?type=movie" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
+          <Link to="/filter?format=MOVIE" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
             Movies
           </Link>
         </li>
         <li>
-          <Link to="/filter?type=tv" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
+          <Link to="/filter?format=TV" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
             TV Series
           </Link>
         </li>
