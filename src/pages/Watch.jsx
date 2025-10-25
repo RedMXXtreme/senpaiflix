@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
-import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan } from "../utils/anilistApi";
+import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
 
 export default function Watch() {
   const { id } = useParams();
@@ -65,26 +65,38 @@ export default function Watch() {
         ];
         setSeasons(allSeasons);
 
-        // Get released episodes based on airing schedule or fallback
-        let releasedEpisodes = [];
-        const now = Math.floor(Date.now() / 1000);
+        // Get ALL episodes (not just released ones)
+        let allEpisodes = [];
 
-        if (media.airingSchedule && media.airingSchedule.nodes && media.airingSchedule.nodes.length > 0) {
-          // Filter episodes that have aired
-          releasedEpisodes = media.airingSchedule.nodes
-            .filter(node => node.airingAt <= now)
-            .map(node => node.episode)
-            .sort((a, b) => a - b);
-        } else if (media.episodes !== null && media.episodes > 0) {
-          // Fallback to total episodes if no airing schedule
-          releasedEpisodes = Array.from({ length: media.episodes }, (_, i) => i + 1);
-        } else if (media.idMal) {
-          // If episodes is null, try Jikan API
+        // Priority 1: Use total episode count if available
+        if (media.episodes !== null && media.episodes > 0) {
+          allEpisodes = Array.from({ length: media.episodes }, (_, i) => i + 1);
+          console.log(`Showing all ${media.episodes} episodes`);
+        } 
+        // Priority 2: Check airing schedule for episode count
+        else if (media.airingSchedule && media.airingSchedule.nodes && media.airingSchedule.nodes.length > 0) {
+          const maxEpisode = Math.max(...media.airingSchedule.nodes.map(node => node.episode));
+          allEpisodes = Array.from({ length: maxEpisode }, (_, i) => i + 1);
+          console.log(`Found ${maxEpisode} episodes from airing schedule`);
+        } 
+        // Priority 3: Try Jikan API if we have MAL ID
+        else if (media.idMal) {
+          console.log(`Attempting to fetch episodes from Jikan API for MAL ID: ${media.idMal}`);
           const jikanEpisodes = await fetchEpisodesFromJikan(media.idMal);
-          releasedEpisodes = jikanEpisodes;
+          if (jikanEpisodes && jikanEpisodes.length > 0) {
+            allEpisodes = jikanEpisodes;
+            console.log(`Found ${jikanEpisodes.length} episodes from Jikan API`);
+          }
+        }
+        
+        // Final fallback: estimate based on format and status
+        if (allEpisodes.length === 0) {
+          console.log(`No episode data found, estimating based on format: ${media.format}, status: ${media.status}`);
+          allEpisodes = estimateEpisodes(media.format, media.status);
+          console.log(`Estimated ${allEpisodes.length} episodes`);
         }
 
-        setReleasedEpisodes(releasedEpisodes);
+        setReleasedEpisodes(allEpisodes);
 
         // Fetch recommendations
         const recs = await fetchAnimeRecommendations(id);
@@ -170,6 +182,30 @@ export default function Watch() {
         {/* --- Left Sidebar (Episodes) --- */}
         <div className="w-full md:w-[20%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
           <h2 className="text-lg font-semibold mb-3">Episodes</h2>
+          
+          {/* Pagination Controls - Top */}
+          {totalPages > 1 && releasedEpisodes.length > 0 && (
+            <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/10">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-400">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+              >
+                Next
+              </button>
+            </div>
+          )}
+
           <input
             type="text"
             placeholder="Find"
@@ -191,13 +227,13 @@ export default function Watch() {
                     Episode {ep}
                   </button>
                 ))}
-                {/* Pagination Controls */}
+                {/* Pagination Controls - Bottom */}
                 {totalPages > 1 && (
-                  <div className="flex justify-between items-center mt-4">
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/10">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50"
+                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
                     >
                       Previous
                     </button>
@@ -207,7 +243,7 @@ export default function Watch() {
                     <button
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50"
+                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
                     >
                       Next
                     </button>
@@ -291,10 +327,6 @@ export default function Watch() {
             <Countdowm title={anime.title.romaji} />
           </div>
         </div>
-
-
-
-
         {/* --- Right Sidebar (Anime Info) --- */}
         <div className="w-full md:w-[25%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
           <img
@@ -383,8 +415,7 @@ export default function Watch() {
   </div>
 )}
 
+
     </div>
   );
 }
-
-
