@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { sendAniListQuery } from "../../utils/anilistApi";
-import "./seasonSection.css";
+import "./SeasonSection.css";
 
 
 const SeasonSection = ({ animeId }) => {
@@ -140,4 +140,5 @@ const SeasonSection = ({ animeId }) => {
 };
 
 export default SeasonSection;
+
 
