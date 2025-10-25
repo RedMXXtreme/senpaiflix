@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Loader from '../components/Loader';
+import { fetchAnimeDetail } from '../utils/anilistApi';
 import {
   FaPlay,
   FaMicrophone,
@@ -29,39 +30,32 @@ const AnimeDetail = () => {
   useEffect(() => {
     const fetchAnime = async () => {
       try {
-        const response = await axios.get(
-          `https://api.jikan.moe/v4/anime/${id}`
-        );
-        const data = response.data.data;
+        const data = await fetchAnimeDetail(id);
         const animeData = {
-          title: data.title_english,
-          romaji: data.title,
-          synonyms: data.title_synonyms,
-          description: data.synopsis,
-          coverImage: data.images.jpg.large_image_url,
-          bannerImage:
-            data.trailer?.images?.large || data.images.jpg.large_image_url,
-          genres: data.genres.map((genre) => genre.name),
+          title: data.title.english || data.title.romaji,
+          romaji: data.title.romaji,
+          japaneseTitle: data.title.native,
+          synonyms: [],
+          description: data.description,
+          coverImage: data.coverImage.extraLarge,
+          bannerImage: data.bannerImage || data.coverImage.extraLarge,
+          genres: data.genres,
           episodes: data.episodes,
           status: data.status,
-          aired: data.aired?.string || "Unknown",
-          premiered:
-            data.season && data.year
-              ? `${data.season.charAt(0).toUpperCase() + data.season.slice(1)} ${
-                  data.year
-                }`
-              : data.premiered || "Unknown",
-          duration: data.duration || "Unknown",
-          malScore: data.score || "N/A",
-          studios: data.studios.map((studio) => studio.name).join(", ") || "Unknown",
-          producers:
-            data.producers.map((producer) => producer.name).join(", ") || "Unknown",
-          rating: data.rating || "PG-13",
-          type: data.type || "TV",
+          aired: data.season && data.seasonYear ? `${data.season} ${data.seasonYear}` : "Unknown",
+          premiered: data.season && data.seasonYear ? `${data.season.charAt(0).toUpperCase() + data.season.slice(1)} ${data.seasonYear}` : "Unknown",
+          duration: data.duration ? `${data.duration} min/ep` : "Unknown",
+          malScore: data.averageScore ? `${data.averageScore}%` : "N/A",
+          studios: data.studios?.nodes[0]?.name || "Unknown",
+          producers: "Unknown",
+          rating: "PG-13",
+          type: "TV",
+          idMal: data.idMal,
+          trailer: data.trailer,
         };
         setAnime(animeData);
       } catch (err) {
-        console.error("Error fetching anime detail from Jikan", err);
+        console.error("AniList fetch error:", err);
       }
     };
 
@@ -69,18 +63,27 @@ const AnimeDetail = () => {
   }, [id]);
 
   useEffect(() => {
-    // Fetch promo videos when id changes
-    if (id) {
-      fetchPromoVideos();
+    if (anime && anime.idMal) {
+      fetchPromoVideos(anime.idMal);
     }
-  }, [id]);
+  }, [anime]);
 
-  const fetchPromoVideos = async () => {
+  const fetchPromoVideos = async (malId) => {
     try {
-      const response = await axios.get(`https://api.jikan.moe/v4/anime/${id}/videos`);
+      const response = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/videos`);
       const promoVideos = response.data.data.promo;
       if (promoVideos && promoVideos.length > 0) {
         setPromoVideos(promoVideos);
+      } else if (anime.trailer && anime.trailer.site === "youtube") {
+        // Fallback to AniList trailer if no promo videos
+        const videoId = anime.trailer.id;
+        const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        setPromoVideos([{
+          trailer: {
+            embed_url: `https://www.youtube.com/embed/${videoId}`,
+            images: { maximum_image_url: thumbnailUrl }
+          }
+        }]);
       } else {
         console.log("No promo videos available.");
       }
@@ -274,7 +277,7 @@ const AnimeDetail = () => {
                   }}
                 >
                   <img
-                    src={promo.trailer.images.maximum_image_url}
+                    src={promo.trailer.images.maximum_image_url || anime.coverImage}
                     alt={`Trailer ${index + 1}`}
                     className="w-full h-auto object-cover rounded-lg"
                     style={{ aspectRatio: "16/9" }}

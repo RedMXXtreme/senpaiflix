@@ -13,9 +13,6 @@ import Random from "./components/Random";
 import Watch from "./pages/Watch";
 import NotFound from "./pages/NotFound";
 import Waifu from "./pages/waifu";
-import Imbd from "./pages/imbd"; // Adjusted import path
-import ImbdPlayer from "./pages/imbd_player";
-import SecurityProvider from "./components/SecurityProvider";
 
 const AppContent = () => {
   const location = useLocation();
@@ -29,13 +26,12 @@ const AppContent = () => {
         <Route path="/anime/:id" element={<AnimeDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/random" element={<Random />} />
-        <Route path="/watch/:animeId/:episodeNumber?" element={<Watch />} />
+        <Route path="/watch/:id/:episodeNumber?" element={<Watch />} />
         <Route path="/:category" element={<CategoryPage />} />
         <Route path="/filter" element={<FilterPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/waifu" element={<Waifu />} />
-        <Route path="/imbd" element={<Imbd />} />
-        <Route path="/imbd/:id/:primaryTitle" element={<ImbdPlayer />} />
+
         {/* Add more routes as needed */}
       </Routes>
       <Footer />
@@ -45,7 +41,6 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <SecurityProvider>
     <Router
       future={{
         v7_startTransition: true,
@@ -54,7 +49,6 @@ const App = () => {
     >
       <AppContent />
     </Router>
-      </SecurityProvider>
   );
 };
 

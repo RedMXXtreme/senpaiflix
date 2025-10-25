@@ -13,7 +13,7 @@ export default function TrendingCarousel() {
           query {
             Page(perPage: 10) {
               media(sort: TRENDING_DESC, type: ANIME) {
-                idMal
+                id
                 title {
                   romaji
                   english
@@ -50,8 +50,8 @@ export default function TrendingCarousel() {
       <div className="space-y-3">
         {animeData.map((anime, index) => (
           <div
-            key={anime.idMal}
-            onClick={() => navigate(`/anime/${anime.idMal}`)}
+            key={anime.id}
+            onClick={() => navigate(`/anime/${anime.id}`)}
             className="flex items-center bg-[#1c1c2e] p-2 rounded-lg shadow-sm hover:bg-[#2a2a40] transition cursor-pointer"
           >
             <div className="text-2xl font-bold text-green-400 w-6 text-center">{index + 1}</div>
@@ -61,7 +61,14 @@ export default function TrendingCarousel() {
               className="w-16 h-16 object-cover rounded-md mx-3"
             />
             <div className="flex-1">
-              <p className="font-medium text-sm max-w-[120px] leading-snug">{anime.title.english}</p>
+              <p className="font-medium text-sm max-w-[120px] leading-snug">
+  {anime.title.english
+    ? anime.title.english.length > 20
+      ? anime.title.english.slice(0, 20) + "…"
+      : anime.title.english
+    : "No Title"}
+</p>
+
               <div className="flex items-center gap-1 mt-1 text-xs">
                 <span className="bg-red-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
                   CC {anime.episodes ?? '—'}

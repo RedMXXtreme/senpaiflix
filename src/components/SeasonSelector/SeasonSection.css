@@ -1,0 +1,221 @@
+/* Season Selector Component Styles */
+
+/* CSS Custom Properties for theming and maintainability */
+:root {
+  --season-bg-primary: #111827;
+  --season-bg-secondary: #1f2937;
+  --season-text-primary: #fff;
+  --season-text-secondary: #d1d5db;
+  --season-accent: #ef4444;
+  --season-highlight: rgba(236, 72, 153, 0.8);
+  --season-shadow: rgba(236, 72, 153, 0.6);
+  --season-overlay-bg: rgba(0, 0, 0, 0.7);
+  --season-nav-bg: rgba(55, 65, 81, 0.7);
+  --season-nav-hover: rgba(75, 85, 99, 0.9);
+  --season-border-radius: 12px;
+  --season-transition: 0.3s ease;
+  --season-scale-hover: 1.05;
+  --season-gap: 1rem;
+  --season-padding: 1.5rem 2rem;
+  --season-card-min-width: 200px;
+  --season-card-height: 60px;
+}
+
+/* Main container */
+.season-container {
+  padding: var(--season-padding);
+  background-color: var(--season-bg-primary);
+  color: var(--season-text-primary);
+  position: relative;
+}
+
+/* Title styling */
+.season-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/* Carousel wrapper */
+.carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Carousel container */
+.season-carousel {
+  display: flex;
+  gap: var(--season-gap);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for WebKit browsers */
+.season-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Individual season card */
+.season-card {
+  position: relative;
+  min-width: var(--season-card-min-width);
+  height: var(--season-card-height);
+  border-radius: var(--season-border-radius);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--season-bg-secondary);
+  transition: transform var(--season-transition);
+  cursor: pointer;
+}
+
+/* Hover effect for cards */
+.season-card:hover {
+  transform: scale(var(--season-scale-hover));
+}
+
+/* Season image */
+.season-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+  transition: opacity var(--season-transition);
+}
+
+/* Overlay for text and badges */
+.season-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(to top, var(--season-overlay-bg), transparent);
+}
+
+/* Season title in overlay */
+.season-overlay h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--season-text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+/* Episode badge */
+.episode-badge {
+  background: var(--season-accent);
+  color: var(--season-text-primary);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: calc(var(--season-border-radius) / 1.5);
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Navigation buttons */
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--season-nav-bg);
+  color: var(--season-text-secondary);
+  border: none;
+  border-radius: 50%;
+  padding: 0.3rem;
+  cursor: pointer;
+  z-index: 5;
+  transition: background var(--season-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Hover effect for nav buttons */
+.nav-btn:hover {
+  background: var(--season-nav-hover);
+}
+
+/* Left navigation button */
+.nav-btn.left {
+  left: -10px;
+}
+
+/* Right navigation button */
+.nav-btn.right {
+  right: -10px;
+}
+
+/* Active season card highlight */
+.season-card.active {
+  box-shadow: 0 0 25px var(--season-shadow);
+  border: 2px solid var(--season-highlight);
+  transform: scale(var(--season-scale-hover));
+}
+
+/* Focus states for accessibility */
+.season-card:focus,
+.nav-btn:focus {
+  outline: 2px solid var(--season-highlight);
+  outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .season-container {
+    padding: 1rem;
+  }
+
+  .season-title {
+    font-size: 1.25rem;
+  }
+
+  .season-card {
+    min-width: 150px;
+    height: 50px;
+  }
+
+  .nav-btn {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.2rem;
+  }
+
+  .nav-btn.left {
+    left: -5px;
+  }
+
+  .nav-btn.right {
+    right: -5px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .season-card {
+    border: 1px solid var(--season-text-primary);
+  }
+
+  .nav-btn {
+    border: 1px solid var(--season-text-secondary);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .season-card,
+  .season-img,
+  .nav-btn {
+    transition: none;
+  }
+
+  .season-carousel {
+    scroll-behavior: auto;
+  }
+}

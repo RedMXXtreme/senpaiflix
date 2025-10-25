@@ -6,7 +6,7 @@ const fetchAnimeByStatus = async (status) => {
     query ($status: MediaStatus) {
       Page(perPage: 6) {
         media(status: $status, type: ANIME, sort: POPULARITY_DESC) {
-          idMal
+          id
           title {
             romaji
           }
@@ -39,14 +39,14 @@ const AnimeSection = ({ title, data, tag }) => (
       </div>
     <ul className="space-y-4">
       {data.map((anime) => (
-        <li key={anime.idMal} className="flex items-center gap-3">
+        <li key={anime.id} className="flex items-center gap-3">
           <img
             src={anime.coverImage.medium}
             alt={anime.title.romaji}
             className="w-12 h-12 rounded-full object-cover border border-gray-600"
           />
           <div className="flex flex-col text-white text-sm">
-            <a href={`/anime/${anime.idMal}`} className="font-semibold line-clamp-1">
+            <a href={`/anime/${anime.id}`} className="font-semibold line-clamp-1">
               {anime.title.romaji}
             </a>
             <div className="flex gap-2 mt-1 text-xs text-gray-400 flex-wrap">

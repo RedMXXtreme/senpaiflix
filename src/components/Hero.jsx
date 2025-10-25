@@ -14,11 +14,11 @@ const HeroCarousel = () => {
           query {
             Page(perPage: 10) {
               media(
-        sort: POPULARITY_DESC,
-        type: ANIME,
-        seasonYear: ${currentYear}
-      ) {
-                idMal
+       sort: POPULARITY_DESC,
+       type: ANIME,
+       seasonYear: ${currentYear}
+     ) {
+               id
                 title {
                   romaji
                   english
@@ -55,16 +55,19 @@ const HeroCarousel = () => {
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % animeList.length);
-    }, 6000);
-    return () => clearInterval(interval);
+    if (animeList.length > 0) {
+      const interval = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % animeList.length);
+      }, 6000);
+      return () => clearInterval(interval);
+    }
   }, [animeList]);
 
   if (animeList.length === 0) return null;
-  const anime = animeList[current];
+  const safeCurrent = Math.min(current, animeList.length - 1);
+  const anime = animeList[safeCurrent];
 
-  const airedString = anime.startDate?.year
+  const airedString = anime?.startDate?.year
     ? `${anime.startDate.day || "??"}/${anime.startDate.month || "??"}/${anime.startDate.year}`
     : "Unknown";
 
@@ -113,13 +116,13 @@ const HeroCarousel = () => {
         {/* Buttons */}
         <div className="flex gap-4">
           <a
-            href={`/watch/${anime.idMal}`}
+            href={`/watch/${anime.id}`}
             className="bg-pink-400 hover:bg-pink-500 text-white font-semibold text-sm px-6 py-2 rounded-full"
           >
             ▶️ Watch Now
           </a>
           <a
-            href={`/anime/${anime.idMal}`}
+            href={`/anime/${anime.id}`}
             className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-6 py-2 rounded-full"
           >
             Detail ➤

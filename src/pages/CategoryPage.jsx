@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchNewReleases, fetchUpdates, fetchOngoing, fetchRecent } from '../utils/api';
+import { fetchNewReleases, fetchUpdates, fetchOngoing, fetchRecent } from '../utils/anilistApi';
 import Loader from '../components/Loader';
+import PageSlider from '../components/PageSlider';
 
 const categoryFetchMap = {
   'new-releases': fetchNewReleases,
@@ -17,7 +18,7 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchCategoryData = async () => {
@@ -34,27 +35,23 @@ export default function CategoryPage() {
         if (category === 'ongoing') {
           console.log('Ongoing category raw data:', data);
         }
-        if (!data) {
+        if (!data || !data.media) {
           console.warn(`No data received for category: ${category} page: ${currentPage}`);
           setAnimeData([]);
-          setHasMore(false);
-        } else if (!Array.isArray(data)) {
+          setTotalPages(1);
+        } else if (!Array.isArray(data.media)) {
           console.warn(`Data received is not an array for category: ${category} page: ${currentPage}`, data);
           setAnimeData([]);
-          setHasMore(false);
+          setTotalPages(1);
         } else {
-          setAnimeData(data);
-          if (data.length === 0) {
-            setHasMore(false);
-          } else {
-            setHasMore(true);
-          }
+          setAnimeData(data.media);
+          setTotalPages(data.totalPages || 1);
         }
       } catch (err) {
         console.error('Error fetching category data:', err);
         setError('Failed to fetch data');
         setAnimeData([]);
-        setHasMore(false);
+        setTotalPages(1);
       } finally {
         setLoading(false);
       }
@@ -63,16 +60,8 @@ export default function CategoryPage() {
     fetchCategoryData();
   }, [category, currentPage]);
 
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (hasMore) {
-      setCurrentPage(prev => prev + 1);
-    }
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   if (loading) return <div> <Loader /></div>;
@@ -85,14 +74,14 @@ export default function CategoryPage() {
         {animeData.length === 0 && <p>No data available.</p>}
         {animeData.map((anime, index) => (
           <div
-            key={anime.idMal ? anime.idMal : `anime-${index}`}
+            key={anime.id ? anime.id : `anime-${index}`}
             className="flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/anime/${anime.idMal}`)}
+            onClick={() => navigate(`/anime/${anime.id}`)}
             role="button"
             tabIndex={0}
             onKeyPress={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/anime/${anime.idMal}`);
+                navigate(`/anime/${anime.id}`);
               }
             }}
           >
@@ -107,23 +96,11 @@ export default function CategoryPage() {
           </div>
         ))}
       </div>
-      <div className="flex justify-center mt-6 space-x-4">
-        <button
-          onClick={handlePrevious}
-          disabled={currentPage === 1 || loading}
-          className={`px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed`}
-        >
-          Previous
-        </button>
-        <span className="text-white self-center">Page {currentPage}</span>
-        <button
-          onClick={handleNext}
-          disabled={!hasMore || loading}
-          className={`px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed`}
-        >
-          Next
-        </button>
-      </div>
+      <PageSlider
+        page={currentPage}
+        totalPages={totalPages}
+        handlePageChange={handlePageChange}
+      />
     </div>
   );
 }

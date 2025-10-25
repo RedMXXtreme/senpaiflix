@@ -173,7 +173,7 @@ const AnimeSchedule = () => {
                 {item.media.title.english || item.media.title.romaji}
               </span>
               <span className="flex items-center text-gray-400 text-sm space-x-1">
-                <Link to={`/watch/${item.media.idMal}`} className="hover:text-pink-400 transition duration-300"><span>Episode {item.episode}</span></Link>
+                <Link to={`/watch/${item.media.id}`} className="hover:text-pink-400 transition duration-300"><span>Episode {item.episode}</span></Link>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4"

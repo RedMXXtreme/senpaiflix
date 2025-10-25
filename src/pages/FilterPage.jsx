@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { fetchAnimeWithFilters } from '../utils/api';
+import { fetchAnimeWithFilters } from '../utils/anilistApi';
 import Loader from '../components/Loader';
 
 const genres = [

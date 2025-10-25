@@ -13,7 +13,7 @@ export default function UpComingGrid() {
           query {
             Page(perPage: 24) {
               media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
-                idMal
+                id
                 title {
                   romaji
                 }
@@ -43,13 +43,13 @@ export default function UpComingGrid() {
       <div className="max-w-screen-xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         {animeData.map((anime, index) => (
           <div
-            key={anime.idMal}
+            key={anime.id}
             className="relative cursor-pointer flex flex-col items-center"
-            onClick={() => navigate(`/anime/${anime.idMal}`)}
+            onClick={() => navigate(`/anime/${anime.id}`)}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') navigate(`/anime/${anime.idMal}`);
+              if (e.key === 'Enter') navigate(`/anime/${anime.id}`);
             }}
           >
             <div className="relative cursor-pointer flex flex-col items-center">

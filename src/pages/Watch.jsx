@@ -1,860 +1,368 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import {
-  fetchAnimeDetailsWithCache,
-  fetchAnimeRecommendationsWithCache,
-  get2AnimeEmbedUrl,
-  get2AnimeEmbedUrl1,
-  get2AnimeEmbedUrl2,
-  get2AnimeEmbedUrl3,
-  fetchIframeUrlFromDesiDub,
-  fetchHindiDubEpisodeCount,
-  fetchIframefromGogoAnime,
-  fetchIframeFrom9AnimeDub,
-  fetchIframeUrlFromHanimeHentai,
-  fetchIframeUrlFromWatchhentai,
-  fetchIframefromAniHQAnimeSubbed,
-  fetchIframefromAniHQAnimeDubbed,
-  fetchImdbIdFromApi,
-} from "../utils/streamingApis";
-import "./watch.css";
-import Countdowm from "../components/countdown";
-import Loader from "../components/Loader";
-import { slugify } from "../utils/slugify";
+import { useParams, Link } from "react-router-dom";
+import SeasonSection from "../components/SeasonSelector/SeasonSection";
+import Countdowm from "../components/countdown.jsx";
+import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan } from "../utils/anilistApi";
 
-const Watch = () => {
-  const { animeId, episodeNumber } = useParams();
-  const navigate = useNavigate();
-  const [animeDetails, setAnimeDetails] = useState(null);
-  const [episodes, setEpisodes] = useState([]);
-  const [currentEpisode, setCurrentEpisode] = useState(
-    episodeNumber ? parseInt(episodeNumber) : 1
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [lastVisiblePage, setLastVisiblePage] = useState(1);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [streamUrl, setStreamUrl] = useState("");
-  const [streamUrl1, setStreamUrl1] = useState("");
-  const [streamUrl2, setStreamUrl2] = useState("");
-  const [streamUrl3, setStreamUrl3] = useState("");
-  const [streamUrlDesiDub, setStreamUrlDesiDub] = useState("");
-  const [streamUrlGogoAnime, setStreamUrlGogoAnime] = useState("");
-  const [streamUrl9AnimeDub, setStreamUrl9AnimeDub] = useState("");
-  const [streamUrlHanimeHentai, setStreamUrlHanimeHentai] = useState("");
-  const [streamUrlWatchHentai, setStreamUrlWatchHentai] = useState("");
-  const [streamUrlAniHQSubbed, setStreamUrlAniHQSubbed] = useState("");
-  const [streamUrlAniHQDubbed, setStreamUrlAniHQDubbed] = useState("");
-  const [streamUrlVidSrc, setStreamUrlVidSrc] = useState("");
-  const [server, setServer] = useState("HD-1");
-  const [episodeSearch, setEpisodeSearch] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
+export default function Watch() {
+  const { id } = useParams();
+  const [anime, setAnime] = useState(null);
+  const [episode, setEpisode] = useState(1);
+  const [sourceType, setSourceType] = useState("sub");
+  const [activeServer, setActiveServer] = useState("HD-1");
+  const [releasedEpisodes, setReleasedEpisodes] = useState([]);
+  const [seasons, setSeasons] = useState([]); // ✅ New: store related seasons
   const [recommendations, setRecommendations] = useState([]);
-  const [hindiDubEpisodeCount, setHindiDubEpisodeCount] = useState(0);
-  const [nineAnimeDubEpisodeCount, setNineAnimeDubEpisodeCount] = useState(0);
-  const [isNotFound, setIsNotFound] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const [relations, setRelations] = useState([]); // NEW: for Prequel & Sequel
+  const [currentPage, setCurrentPage] = useState(1);
+  const episodesPerPage = 100;
 
+  // Calculate pagination
+  const totalPages = Math.ceil(releasedEpisodes.length / episodesPerPage);
+  const startIndex = (currentPage - 1) * episodesPerPage;
+  const endIndex = startIndex + episodesPerPage;
+  const currentEpisodes = releasedEpisodes.slice(startIndex, endIndex);
 
-  const fetchEpisodesPage = async (page) => {
-    try {
-      const response = await fetch(
-        `https://api.jikan.moe/v4/anime/${animeId}/episodes?page=${page}`
-      );
-      const data = await response.json();
-      if (data && data.data) {
-        setEpisodes(data.data);
-        if (data.pagination) {
-          setCurrentPage(data.pagination.current_page || page);
-          setLastVisiblePage(data.pagination.last_visible_page);
-          setHasNextPage(data.pagination.has_next_page);
-        }
-        if (data.data.length > 0) {
-          setCurrentEpisode(data.data[0].mal_id);
-          navigate(`/watch/${animeId}/${data.data[0].mal_id}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching episodes page:", error);
-    }
-  };
-
+  // Reset to page 1 when episodes change
   useEffect(() => {
-    if (!animeId) return;
+    setCurrentPage(1);
+  }, [releasedEpisodes]);
 
-    const fetchAnimeDetails = async () => {
-      try {
-        const details = await fetchAnimeDetailsWithCache(animeId);
-        setAnimeDetails(details.anime);
-        setIsNotFound(false);
-        await fetchEpisodesPage(1);
-      } catch (error) {
-        console.error("Error fetching anime details:", error);
-        if (
-          error.response &&
-          error.response.status === 404 &&
-          error.response.data ===
-            "Sorry, the page you are looking for could not be found."
-        ) {
-          setIsNotFound(true);
-        }
-      }
-    };
-
-    fetchAnimeDetails();
-  }, [animeId]);
-
-  // Fetch Prequel and Sequel
+  // Fetch anime info + relations
   useEffect(() => {
-    if (!animeId) return;
-
-    const fetchRelations = async () => {
+    const fetchAnime = async () => {
       try {
-        const response = await fetch(
-          `https://api.jikan.moe/v4/anime/${animeId}/relations`
-        );
-        const data = await response.json();
-        if (data && data.data) {
-          const filtered = data.data.filter(
-            (rel) => rel.relation === "Prequel" || rel.relation === "Sequel"
-          );
-          setRelations(filtered);
+        const media = await fetchAnimeWatch(id);
+        setAnime(media);
+
+        // ✅ Extract and sort seasons from relations
+        const related = media.relations.edges
+          .filter(edge =>
+            ["SEQUEL", "PREQUEL", "ALTERNATIVE"].includes(edge.relationType)
+          )
+          .map(edge => ({
+            id: edge.node.id,
+            title: edge.node.title.english || edge.node.title.romaji,
+            cover: edge.node.coverImage.large,
+            format: edge.node.format,
+            season: edge.node.season,
+            year: edge.node.seasonYear,
+            relation: edge.relationType,
+          }))
+          .sort((a, b) => (a.year || 0) - (b.year || 0));
+
+        // Include current anime as Season 1
+        const allSeasons = [
+          {
+            id: media.id,
+            title: media.title.english || media.title.romaji,
+            cover: media.coverImage.large,
+            format: media.format,
+            season: media.season,
+            year: media.seasonYear,
+            relation: "CURRENT",
+          },
+          ...related,
+        ];
+        setSeasons(allSeasons);
+
+        // Get released episodes based on airing schedule or fallback
+        let releasedEpisodes = [];
+        const now = Math.floor(Date.now() / 1000);
+
+        if (media.airingSchedule && media.airingSchedule.nodes && media.airingSchedule.nodes.length > 0) {
+          // Filter episodes that have aired
+          releasedEpisodes = media.airingSchedule.nodes
+            .filter(node => node.airingAt <= now)
+            .map(node => node.episode)
+            .sort((a, b) => a - b);
+        } else if (media.episodes !== null && media.episodes > 0) {
+          // Fallback to total episodes if no airing schedule
+          releasedEpisodes = Array.from({ length: media.episodes }, (_, i) => i + 1);
+        } else if (media.idMal) {
+          // If episodes is null, try Jikan API
+          const jikanEpisodes = await fetchEpisodesFromJikan(media.idMal);
+          releasedEpisodes = jikanEpisodes;
         }
-      } catch (error) {
-        console.error("Error fetching relations:", error);
-      }
-    };
 
-    fetchRelations();
-  }, [animeId]);
+        setReleasedEpisodes(releasedEpisodes);
 
-  useEffect(() => {
-    if (!animeId) return;
-
-    const recommendationsCache = new Map();
-
-    const fetchRecommendations = async () => {
-      if (recommendationsCache.has(animeId)) {
-        setRecommendations(recommendationsCache.get(animeId));
-        return;
-      }
-      try {
-        // Throttle request by waiting 1 second before API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const recs = await fetchAnimeRecommendationsWithCache(animeId);
-        recommendationsCache.set(animeId, recs);
+        // Fetch recommendations
+        const recs = await fetchAnimeRecommendations(id);
         setRecommendations(recs);
-      } catch (error) {
-        console.error("Error fetching recommendations:", error);
+      } catch (err) {
+        console.error("AniList fetch error:", err);
       }
     };
 
-    fetchRecommendations();
-  }, [animeId]);
+    fetchAnime();
+  }, [id]);
 
-  useEffect(() => {
-    if (!animeDetails || episodes.length === 0) return;
+  const slugify = (str = "") =>
+    str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
-    if (animeDetails.title_english) {
-      const url = get2AnimeEmbedUrl(animeDetails.title, currentEpisode);
-      const url1 = get2AnimeEmbedUrl1(animeDetails.title_english, currentEpisode);
-      const url2 = get2AnimeEmbedUrl2(animeDetails.title_english, currentEpisode);
-      const url3 = get2AnimeEmbedUrl3(animeDetails.title, currentEpisode);
-      setStreamUrl(url);
-      setStreamUrl1(url1);
-      setStreamUrl2(url2);
-      setStreamUrl3(url3);
-    }
-  }, [animeDetails, episodes, currentEpisode]);
+  const getIframeUrl = () => {
+    const slug = slugify(anime?.title?.english || anime?.title?.romaji || "");
+    const ep = episode;
+    const aniId = anime?.id;
 
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchImdbIdAndSetUrl = async () => {
-      const animeName = animeDetails.title_english || animeDetails.title;
-      console.log("Fetching IMDb ID for anime:", animeName);
-      const imdbId = await fetchImdbIdFromApi(animeName);
-      console.log("Fetched IMDb ID:", imdbId);
-      if (imdbId) {
-        let type = animeDetails.type?.toLowerCase() === "movie" ? "movie" : "tv";
-        const imbdurl = `https://vidsrc.net/embed/${type}?imdb=${imdbId}&ds_lang=de`;
-        console.log("Constructed iframe URL:", imbdurl);
-        setStreamUrlVidSrc(imbdurl);
-      } else {
-        console.warn("No IMDb ID found, setting empty iframe URL");
-        setStreamUrlVidSrc("");
+    if (sourceType === "sub") {
+      switch (activeServer) {
+        case "HD-1":
+          return `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/sub`;
+        case "HD-2":
+          return `https://player.videasy.net/anime/${aniId}/${ep}?dub=false`;
+        case "HD-3":
+          return `https://vidnest.fun/anime/${aniId}/${ep}/sub`;
+        default:
+          return "";
       }
-    };
-
-    fetchImdbIdAndSetUrl();
-  }, [animeDetails]);
-
-useEffect(() => {
-  const iframeCache = new Map();
-
-  const fetchWithRetry = async (slug, episode, retries = 3, delay = 1000) => {
-    const cacheKey = `${slug}-${episode}`;
-    if (iframeCache.has(cacheKey)) {
-      return iframeCache.get(cacheKey);
-    }
-    try {
-      const url = await fetchIframeUrlFromDesiDub(slug, episode);
-      if (url) {
-        iframeCache.set(cacheKey, url);
+    } else {
+      switch (activeServer) {
+        case "HD-1":
+          return `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/dub`;
+        case "HD-2":
+          return `https://player.videasy.net/anime/${aniId}/${ep}?dub=true`;
+        case "HD-3":
+          return `https://vidnest.fun/anime/${aniId}/${ep}/dub`;
+        default:
+          return "";
       }
-      return url;
-    } catch (error) {
-      if (retries > 0) {
-        await new Promise((res) => setTimeout(res, delay));
-        return fetchWithRetry(slug, episode, retries - 1, delay * 2);
-      }
-      return null;
     }
   };
 
-  const fetchDesiDubUrl = async () => {
-    if (!animeDetails) return;
+  if (!anime)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-200 text-lg">
+        Loading...
+      </div>
+    );
 
-    // Try with original title
-    let slugifiedName = slugify(animeDetails.title);
-    let iframeUrl = await fetchWithRetry(slugifiedName, currentEpisode);
-
-    // If not found and English title exists, try with that
-    if (!iframeUrl && animeDetails.title_english) {
-      const fallbackSlug = slugify(animeDetails.title_english);
-      iframeUrl = await fetchWithRetry(fallbackSlug, currentEpisode);
-    }
-
-    setStreamUrlDesiDub(iframeUrl || "");
-  };
-
-  fetchDesiDubUrl();
-
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchGogoAnimeUrl = async () => {
-      // Try with original title
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframefromGogoAnime(slugifiedName, currentEpisode);
-
-      // If not found and English title exists, try with that
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframefromGogoAnime(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlGogoAnime(iframeUrl || "");
-    };
-
-    fetchGogoAnimeUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetch9AnimeDubUrl = async () => {
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframeFrom9AnimeDub(slugifiedName, currentEpisode);
-
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframeFrom9AnimeDub(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrl9AnimeDub(iframeUrl || "");
-    };
-
-    fetch9AnimeDubUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchHanimeHentaiUrl = async () => {
-      // Try with original title
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframeUrlFromHanimeHentai(slugifiedName, currentEpisode);
-
-      // If not found and English title exists, try with that
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframeUrlFromHanimeHentai(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlHanimeHentai(iframeUrl || "");
-    };
-
-    fetchHanimeHentaiUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchWatchHentaiUrl = async () => {
-      // Try with original title
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
-
-      // If not found and English title exists, try with that
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlWatchHentai(iframeUrl || "");
-    };
-
-    fetchWatchHentaiUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchWatchHentaiUrl = async () => {
-      // Try with original title
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframeUrlFromWatchhentai(slugifiedName, currentEpisode);
-
-      // If not found and English title exists, try with that
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframeUrlFromWatchhentai(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlWatchHentai(iframeUrl || "");
-    };
-
-    fetchWatchHentaiUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchAniHQSubbedUrl = async () => {
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframefromAniHQAnimeSubbed(slugifiedName, currentEpisode);
-
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframefromAniHQAnimeSubbed(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlAniHQSubbed(iframeUrl || "");
-    };
-
-    fetchAniHQSubbedUrl();
-  }, [animeDetails, currentEpisode]);
-
-  useEffect(() => {
-    if (!animeDetails) return;
-
-    const fetchAniHQDubbedUrl = async () => {
-      let slugifiedName = slugify(animeDetails.title);
-      let iframeUrl = await fetchIframefromAniHQAnimeDubbed(slugifiedName, currentEpisode);
-
-      if (!iframeUrl && animeDetails.title_english) {
-        const fallbackSlug = slugify(animeDetails.title_english);
-        iframeUrl = await fetchIframefromAniHQAnimeDubbed(fallbackSlug, currentEpisode);
-      }
-
-      setStreamUrlAniHQDubbed(iframeUrl || "");
-    };
-
-    fetchAniHQDubbedUrl();
-  }, [animeDetails, currentEpisode]);
-
-
-  useEffect(() => {
-    if (!animeDetails || !animeDetails.title) return;
-
-    const fetchHindiDubCount = async () => {
-      try {
-        const slugifiedName = slugify(animeDetails.title);
-        const count = await fetchHindiDubEpisodeCount(slugifiedName, currentEpisode);
-        setHindiDubEpisodeCount(count);
-      } catch (error) {
-        if (error.response && error.response.status === 404) {
-          setHindiDubEpisodeCount(0);
-        } else {
-          console.error("Error fetching Hindi Dub episode count:", error);
-
-        }
-      }
-    };
-
-    const fetchNineAnimeDubCount = async () => {
-      try {
-        const slugifiedName = slugify(animeDetails.title);
-        const count = await nineAnimeDubEpisodeCount(slugifiedName);
-        setNineAnimeDubEpisodeCount(count);
-      } catch (error) {
-        console.error("Error fetching 9Anime Dub episode count:", error);
-        setNineAnimeDubEpisodeCount(0);
-      }
-    };
-
-    fetchHindiDubCount();
-    fetchNineAnimeDubCount();
-  }, [animeDetails, currentEpisode]);
-  const handleEpisodeChange = (epNum) => {
-    setCurrentEpisode(epNum);
-    navigate(`/watch/${animeId}/${epNum}`);
-  };
-
-  const filteredEpisodes = episodes.filter(
-    (ep) =>
-      ep.title.toLowerCase().includes(episodeSearch.toLowerCase()) ||
-      ep.mal_id.toString().includes(episodeSearch)
-  );
-
-  if (!animeDetails) {
-    return <Loader />;
-  }
-
-  const genreString = animeDetails.genres
-    ? animeDetails.genres.map((g) => g.name).join(", ")
-    : animeDetails.genre || "";
+  const bgGradient = anime.coverImage.color
+    ? `from-[${anime.coverImage.color}]`
+    : "from-pink-600";
 
   return (
-    <div className="relative min-h-screen text-white">
+    <div className="relative min-h-screen font-inter text-white bg-[#0b0b0b] overflow-hidden">
+      {/* Blurred gradient background */}
       <div
-        className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-30"
-        style={{
-          backgroundImage: `url(${animeDetails.images?.jpg?.large_image_url})`,
-        }}
-        aria-hidden="true"
+        className={`absolute inset-0 bg-gradient-to-br ${bgGradient} via-[#0b0b0b] to-black opacity-40 blur-3xl`}
       ></div>
-      <div className="relative z-10">
-        <div className="watch-page">
-          <div className="breadcrumb">
-            <Link to="/home">Home</Link> / <span>{animeDetails.type}</span> /{" "}
-            <span>Watching {animeDetails.title_english || animeDetails.title}</span>
-          </div>
+           <div className="relative z-10 py-4 text-sm text-gray-300 flex items-center gap-1">
+  <Link
+    to="/home"
+    className="text-pink-400 hover:text-pink-500 transition-colors duration-200"
+  >
+    Home
+  </Link>
+  <span className="text-gray-500">/</span>
+  <Link
+    to={`/anime/${anime.id}`}
+    className="text-pink-400 hover:text-pink-500 transition-colors duration-200 truncate max-w-[150px]"
+    title={anime.title.english || anime.title.romaji}
+  >
+    {anime.title.english || anime.title.romaji}
+  </Link>
+  <span className="text-gray-500">/</span>
+  <span className="text-white font-semibold">Episode {episode}</span>
+</div>
 
-                    <div className="main-content">
-            {/* Left Sidebar - Episode List */}
-          <div className="left-column">
-            <div className="episode-list-header">
-              <div className="episode-list-header-top">
-                <strong className="episode-list-title">Episodes</strong>
-                <div className="header-controls">
+      <div className="relative flex flex-col md:flex-row gap-6 max-w-[1400px] mx-auto p-4 z-10">
+        {/* --- Left Sidebar (Episodes) --- */}
+        <div className="w-full md:w-[20%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+          <h2 className="text-lg font-semibold mb-3">Episodes</h2>
+          <input
+            type="text"
+            placeholder="Find"
+            className="w-full mb-3 px-3 py-2 rounded-md bg-[#1e1e1e] text-sm outline-none focus:ring-1 focus:ring-pink-500"
+          />
+          <div className="max-h-[500px] overflow-y-auto pr-1 custom-scroll">
+            {releasedEpisodes.length > 0 ? (
+              <>
+                {currentEpisodes.map((ep) => (
                   <button
-                    className="header-icon-btn"
-                    aria-label={showGrid ? "List" : "Grid"}
-                    onClick={() => setShowGrid(!showGrid)}
+                    key={ep}
+                    onClick={() => setEpisode(ep)}
+                    className={`w-full text-left px-3 py-2 mb-2 rounded-lg font-medium transition-all ${
+                      episode === ep
+                        ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.6)]"
+                        : "bg-[#1e1e1e] hover:bg-[#2a2a2a]"
+                    }`}
                   >
-                    {showGrid ? "\u2630" : "\u2630"}
-                  </button>
-                </div>
-              </div>
-              <input
-                type="text"
-                placeholder="Find"
-                className="episode-search"
-                value={episodeSearch}
-                onChange={(e) => setEpisodeSearch(e.target.value)}
-              />
-              <div className="pagination-layout">
-                <button
-                  className="pagination-arrow"
-                  onClick={() => {
-                    if (currentPage > 1) {
-                      fetchEpisodesPage(currentPage - 1);
-                    }
-                  }}
-                  disabled={currentPage === 1}
-                  aria-label="Previous Page"
-                >
-                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" >
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
-                </button>
-
-                <select
-                  className="pagination-range-select"
-                  value={currentPage}
-                  onChange={(e) => fetchEpisodesPage(Number(e.target.value))}
-                  aria-label="Select Page"
-                >
-                  {Array.from({ length: lastVisiblePage }, (_, i) => i + 1).map((pageNum) => (
-                    <option key={pageNum} value={pageNum}>
-                      {(() => {
-                        const start = (pageNum - 1) * episodes.length + 1;
-                        const end = Math.min(pageNum * episodes.length, animeDetails.episodes || 0);
-                        return `${String(start).padStart(3, '0')}-${String(end).padStart(3, '0')}`;
-                      })()}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  className="pagination-arrow"
-                  onClick={() => {
-                    if (hasNextPage) {
-                      fetchEpisodesPage(currentPage + 1);
-                    }
-                  }}
-                  disabled={!hasNextPage}
-                  aria-label="Next Page"
-                >
-                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            {showGrid ? (
-              <div className="episode-grid">
-                {filteredEpisodes.map((ep) => (
-                  <button
-                    key={ep.mal_id}
-                    className={`episode-grid-item ${ep.mal_id === currentEpisode ? "active" : ""}`}
-                    
-                    onClick={() => handleEpisodeChange(ep.mal_id)}
-                  >
-                    {ep.mal_id}
+                    Episode {ep}
                   </button>
                 ))}
-              </div>
-            ) : (
-              <div className="episode-list">
-                <ul>
-                  {filteredEpisodes.map((ep) => (
-                    <li
-                      key={ep.mal_id}
-                      className={ep.mal_id === currentEpisode ? "active" : ""}
-                      onClick={() => handleEpisodeChange(ep.mal_id)}
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-between items-center mt-4">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50"
                     >
-                      <span className="episode-number">{ep.mal_id}</span>{" "}
-                      {ep.title.length > 30
-                        ? ep.title.slice(0, 30) + "..."
-                        : ep.title}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Center - Video Player and Controls */}
-              <div className={`center-column`}>
-              <div className="video-player" style={{backgroundImage: !isPlaying ? `url(${animeDetails.images?.jpg?.large_image_url})` : 'none' }}>
-                {!isPlaying ? (
-                  <div
-                    className="video-initial-overlay"
-                    onClick={() => setIsPlaying(true)}
-                  >
-                    <div className="play-button-circle">
-                      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="40" cy="40" r="40"/>
-                        <path d="M32 26L56 40L32 54V26Z"/>
-                      </svg>
-                    </div>
+                      Previous
+                    </button>
+                    <span className="text-sm text-gray-400">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
                   </div>
-) : (
-  (server === "HD-1" && streamUrl) ||
-  (server === "HD-2" && streamUrl1) ||
-  (server === "HD-3" && streamUrl2) ||
-  (server === "HD-4" && streamUrl3) ||
-  (server === "DesiDub" && streamUrlDesiDub) ||
-  (server === "GogoAnime" && streamUrlGogoAnime) ||
-  (server === "9AnimeDub" && streamUrl9AnimeDub) ||
-  (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
-  (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
-  (server === "HD_player" && streamUrlHanimeHentai) ||
-  (server === "HD_player_2" && streamUrlWatchHentai) ||
-  (server === "VidSrc" && streamUrlVidSrc)
-) ? (
-  <iframe
-    key={`stream-${server}-${currentEpisode}`}
-    title={`Episode ${currentEpisode}`}
-    src={
-      server === "HD-1" ? streamUrl :
-      server === "HD-2" ? streamUrl1 :
-      server === "HD-3" ? streamUrl2 :
-      server === "HD-4" ? streamUrl3 :
-      server === "DesiDub" ? streamUrlDesiDub :
-      server === "GogoAnime" ? streamUrlGogoAnime :
-      server === "9AnimeDub" ? streamUrl9AnimeDub :
-      server === "AniHQSubbed" ? streamUrlAniHQSubbed :
-      server === "AniHQDubbed" ? streamUrlAniHQDubbed :
-      server === "HD_player" ? streamUrlHanimeHentai :
-      server === "HD_player_2" ? streamUrlWatchHentai : 
-      server === "VidSrc" ? streamUrlVidSrc : ''
-    }
-    width="100%"
-    height="500px"
-    allowFullScreen
-  ></iframe>
-) : (
-  <div className="playerLoading" style={{ zIndex: 2 }}>
-                  <img src="https://anisnatch.p1y.top/assets/img/loading.gif?v1.0.8"
-                  />
-                  <p style={{position:'relative', left:'188px',
-                  }}>No Stream Available</p>
-                  </div>
-)}
-              </div>
-
-              <div className="video-controls">
-                <button onClick={() => { setFocusMode(true); setIsPlaying(false); }} className={focusMode ? "active" : ""}>
-                Focus
-                </button>
-                
-              </div>
-
-  <div className="watching-server-container">
-              
-<div className="server-selection-container">
-  <div className="watching-message-container">
-    <div className="watching-message">
-      You are Watching <br />
-      <strong>Episode {currentEpisode}</strong> <br />
-      If current server doesn’t work <br />
-      please try other servers beside.
-    </div>
-  </div>
-  <div className="server-buttons-wrapper">
-    <div className="server-row">
-      <div className="server-label">
-        <span role="img" aria-label="keyboard">⌨️</span> SUB:
-      </div>
-          <div className="server-buttons">
-            {genreString.includes("Hentai") ? (
-              <>
-                <button className={server === "HD_player" ? "active" : ""} onClick={() => setServer("HD_player")}>HD_player</button>
-                <button className={server === "HD_player_2" ? "active" : ""} onClick={() => setServer("HD_player_2")}>HD_player 2</button>
+                )}
               </>
             ) : (
-              <>
-                <button className={server === "HD-1" ? "active" : ""} onClick={() => setServer("HD-1")}>HD-1</button>
-                <button className={server === "HD-2" ? "active" : ""} onClick={() => setServer("HD-2")}>HD-2</button>
-                <button className={server === "GogoAnime" ? "active" : ""} onClick={() => setServer("GogoAnime")}>zaza</button>
-                <button className={server === "AniHQSubbed" ? "active" : ""} onClick={() => setServer("AniHQSubbed")}>zoro</button>
-              </>
+              <p className="text-gray-400 text-sm">No episodes released yet.</p>
             )}
           </div>
-    </div>
-    {genreString.includes("Hentai") ? null : (
-    <div className="server-row">
-      <div className="server-label">
-        <span role="img" aria-label="microphone">🎤</span> DUB:
-      </div>
-      <div className="server-buttons">
-        
-          <>
-            <button className={server === "HD-3" ? "active" : ""} onClick={() => setServer("HD-3")}>HD-3</button>
-            <button className={server === "HD-4" ? "active" : ""} onClick={() => setServer("HD-4")}>HD-4</button>
-            {hindiDubEpisodeCount > 0 && streamUrlDesiDub !== "" && (
-              <button className={server === "DesiDub" ? "active" : ""} onClick={() => setServer("DesiDub")}>Hindi</button>
-            )}
-            <button className={server === "9AnimeDub" ? "active" : ""} onClick={() => setServer("9AnimeDub")}>megg</button>
-            <button className={server === "AniHQDubbed" ? "active" : ""} onClick={() => setServer("AniHQDubbed")}>bun</button>
-            <button className={server === "VidSrc" ? "active" : ""} onClick={() => setServer("VidSrc")}>VidSrc</button>
+        </div>
 
-          </>
-        
-      </div>
-    </div>
-    )}
-  </div>
-  {/* ✅ Seasons Section (Enhanced) */}
-<div className="seasons-section" style={{ marginTop: "0.5rem" }}>
-  <h3 className="text-2xl font-bold mb-4 text-white">Seasons</h3>
-  <div className="flex gap-4 overflow-x-auto scrollbar-hide px-2">
-    {relations.length === 0 && (
-      <p className="text-gray-400">No related seasons available.</p>
-    )}
-    {relations.map((rel) =>
-      rel.entry.map((item) => (
-        <Link
-          key={item.mal_id}
-          to={`/watch/${item.mal_id}`}
-          className="relative w-44 rounded-xl overflow-hidden flex-shrink-0 group transition-transform duration-300 hover:scale-105"
-          style={{
-            backgroundImage: `url(${
-              item.images?.jpg?.large_image_url ||
-              animeDetails.images?.jpg?.large_image_url
-            })`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            height: "4rem",
-          }}
-        >
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-90"></div>
+        {/* --- Middle Section (Player + Controls) --- */}
+        <div className="flex-1">
+          {/* Player */}
+          <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-white/10">
+            <iframe
+              src={getIframeUrl()}
+              allowFullScreen
+              className="w-full h-full"
+              title="Anime Player"
+            />
+          </div>
 
-          {/* Text Content */}
-          <div className="absolute bottom-2 left-2 text-white">
-            <p className="text-sm mt-1 font-medium">
-              {item.name.length > 20 ? item.name.slice(0, 20) + "..." : item.name}
+          {/* Episode Info */}
+          <div className="mt-4 bg-[#c7365f] text-center p-3 rounded-lg shadow-[0_0_10px_rgba(236,72,153,0.5)]">
+            <p className="text-sm">
+              You are Watching <strong>Episode {episode}</strong> <br />
+              If current server doesn’t work, please try other servers beside.
             </p>
           </div>
 
-          {/* Hover Shine Effect */}
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        </Link>
-      ))
-    )}
-  </div>
-</div>
-</div>
-              </div>
-              {/* Countdown Timer */} 
-              <div className="countdown-container"> 
-                <Countdowm
-                  title={animeDetails.title_english || animeDetails.title}
-                  episode={currentEpisode}
-                />
-              </div>
-              </div>
-              {/* Right Sidebar - Anime Info */}
-        <div className="right-column">
-          <div className="poster">
-            <img src={animeDetails.images?.jpg?.large_image_url} alt={animeDetails.title_english || animeDetails.title} />
-          </div>
-            <div className="info-text">
-              <h2>{animeDetails.title_english}</h2>
-              <div className="meta">
-                <div>
-                  <strong>{animeDetails.type}</strong>
-                </div>
-                <div>
-                  <strong>HD</strong>
-                </div>
-                <div>
-                  <strong>{animeDetails.episodes}</strong>
-                </div>
-                <div>{animeDetails.duration}</div>
-                <div>{genreString}</div>
-              </div>
-              <p>{animeDetails.synopsis}</p>
-              <p>
-                Senpai is the best site to watch <strong>{animeDetails.title_english}</strong> SUB online, or you can even watch <strong>{animeDetails.title_english}</strong> DUB in HD quality. You can also find Yokohama Animation Lab anime on Senpai Flix website.
-              </p>
-              <button className="view-detail-btn">View detail</button>
-              <div className="rating">
-                <h3>{animeDetails.score}</h3>
-                <div>Vote now</div>
-              </div>
+          {/* Server Buttons */}
+          <div className="mt-5 bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+            <div className="flex flex-wrap gap-3 items-center mb-3">
+              <span className="font-semibold">SUB:</span>
+              {["HD-1", "HD-2", "HD-3"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setActiveServer(s);
+                    setSourceType("sub");
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                    activeServer === s && sourceType === "sub"
+                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                      : "bg-[#222] hover:bg-[#333]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-          </div> 
+
+            <div className="flex flex-wrap gap-3 items-center">
+              <span className="font-semibold">DUB:</span>
+              {["HD-1", "HD-2", "HD-3"].map((s) => (
+                <button
+                  key={`${s}-dub`}
+                  onClick={() => {
+                    setActiveServer(s);
+                    setSourceType("dub");
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                    activeServer === s && sourceType === "dub"
+                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                      : "bg-[#222] hover:bg-[#333]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* ✅ Seasons Section */}
+          <div className="mt-6">
+            <SeasonSection animeId={anime.id} />
+          </div>
+          {/* ✅ Countdown Component */}
+          <div className="mt-6">
+            <Countdowm title={anime.title.romaji} />
+          </div>
         </div>
-{focusMode && (
-  <div className="modal-overlay" onClick={() => setFocusMode(false)}>
-    <div className="modal-content" onClick={(e) => e.stopPropagation()}>   
-      {(server === "HD-1" && streamUrl) ||
-      (server === "HD-2" && streamUrl1) ||
-      (server === "HD-3" && streamUrl2) ||
-      (server === "HD-4" && streamUrl3) ||
-      (server === "DesiDub" && streamUrlDesiDub) ||
-      (server === "GogoAnime" && streamUrlGogoAnime) ||
-      (server === "9AnimeDub" && streamUrl9AnimeDub) ||
-      (server === "AniHQSubbed" && streamUrlAniHQSubbed) ||
-      (server === "AniHQDubbed" && streamUrlAniHQDubbed) ||
-      (server === "HD_player" && streamUrlHanimeHentai) ||
-      (server === "HD_player_2" && streamUrlWatchHentai) ||
-      (server === "VidSrc" && streamUrlVidSrc)
-      
-      ? (
-        <iframe
-          key={`stream-${server}-${currentEpisode}`}
-          title={`Episode ${currentEpisode}`}
-          src={
-            server === "HD-1"
-              ? streamUrl
-              : server === "HD-2"
-              ? streamUrl1
-              : server === "HD-3"
-              ? streamUrl2
-              : server === "HD-4"
-              ? streamUrl3
-              : server === "DesiDub"
-              ? streamUrlDesiDub
-              : server === "GogoAnime"
-              ? streamUrlGogoAnime
-              : server === "9AnimeDub"
-              ? streamUrl9AnimeDub
-              : server === "AniHQSubbed"
-              ? streamUrlAniHQSubbed
-              : server === "AniHQDubbed"
-              ? streamUrlAniHQDubbed
-              : server === "HD_player"
-              ? streamUrlHanimeHentai
-              : server === "HD_player_2"
-              ? streamUrlWatchHentai
-              : server === "VidSrc"
-              ? streamUrlVidSrc
-              : ""
-          }
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          allowFullScreen
-          allow="autoplay; fullscreen"
-        ></iframe>
-      ) : (
-        <div className="playerLoading" style={{ zIndex: 2 }}>
-                  <img src="https://anisnatch.p1y.top/assets/img/loading.gif?v1.0.8"
-                  />
-                  <p style={{position:'relative', left:'188px',
-                  }}>No Stream Available</p>
-                  </div>
-      )}
-      <button className="modal-close-btn" onClick={() => setFocusMode(false)}>
-        ×
-      </button>
+
+
+
+
+        {/* --- Right Sidebar (Anime Info) --- */}
+        <div className="w-full md:w-[25%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+          <img
+            src={anime.coverImage.large}
+            alt={anime.title.romaji}
+            className="rounded-xl mb-4"
+          />
+          <h2 className="text-lg font-semibold mb-2">
+            {anime.title.english || anime.title.romaji}
+          </h2>
+          <div className="flex flex-wrap gap-2 text-xs mb-3">
+            <span className="bg-gray-800 px-2 py-1 rounded">TV</span>
+            <span className="bg-gray-800 px-2 py-1 rounded">HD</span>
+            <span className="bg-gray-800 px-2 py-1 rounded">
+              {anime.duration} min/ep
+            </span>
+          </div>
+          <p className="text-sm text-gray-300 mb-4 line-clamp-6">
+            {anime.description?.replace(/<[^>]+>/g, "")}
+          </p>
+          <Link
+            to={`/anime/${anime.id}`}
+            className="block text-center bg-pink-600 hover:bg-pink-700 transition px-4 py-2 rounded-lg font-semibold mb-4 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+          >
+            View Details
+          </Link>
+
+          <div className="text-center mt-4">
+            <p className="text-2xl font-bold">
+              {(anime.averageScore / 10).toFixed(1)}
+            </p>
+            <p className="text-sm text-gray-400">Vote now</p>
+          </div>
+        </div>
+      </div>
+{/* --- Recommendations Section --- */}
+{recommendations.length > 0 && (
+  <div className="relative max-w-[1400px] mx-auto px-6 py-8 mt-10 bg-[#141414]/80 backdrop-blur-lg rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+    <h2 className="text-2xl font-bold mb-6 text-white tracking-wide flex items-center gap-2">
+      <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
+      Recommendations
+    </h2>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6" style={{gridTemplateColumns:'repeat(8, minmax(0, 2fr))'}}>
+      {recommendations.map((rec) => (
+        <Link
+          key={rec.id}
+          to={`/anime/${rec.id}`}
+          className="group relative overflow-hidden rounded-xl bg-[#1c1c1c] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]"
+        >
+          <div className="relative">
+            <img
+              src={rec.cover}
+              alt={rec.title}
+              className="w-full h-56 object-cover rounded-xl transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute bottom-2 left-2 right-2 text-center text-sm font-semibold text-white">
+              {rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title}
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   </div>
 )}
 
-           {/* Recommendation Section */}
-                      <div className="recommendation-section">
-                        <h3 className="recommendation-title">Recommended for you</h3>
-                        <div className="recommendation-list">
-                          {recommendations.length === 0 && <p>No recommendations available.</p>}
-                          {recommendations.map((rec) => (
-                            <Link
-                              to={`/anime/${rec.entry.mal_id}`}
-                              key={rec.entry.mal_id}
-                              className="recommendation-item"
-                            >
-                              <div className="recommendation-image-wrapper">
-                                <img
-                                  src={rec.entry.images?.jpg?.image_url}
-                                  alt={rec.entry.title}
-                                  className="recommendation-image"
-                                />
-                                {/* Badges */}
-                                <div className="recommendation-badges">
-                                  {rec.entry.rating && rec.entry.rating.includes("R18") && (
-                                    <div className="recommendation-badge">18+</div>
-                                  )}
-                                  {rec.entry.rating && !rec.entry.rating.includes("R18") && (
-                                    <>
-                                      <div className="recommendation-badge cc">cc</div>
-                                      <div className="recommendation-badge mic">🎤</div>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="recommendation-title-text">
-                                {rec.entry.title.length > 20
-                                  ? rec.entry.title.slice(0, 20) + "..."
-                                  : rec.entry.title}
-                              </div>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-      </div>
     </div>
   );
-};
+}
 
-export default Watch;
