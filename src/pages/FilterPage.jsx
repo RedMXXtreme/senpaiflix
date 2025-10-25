@@ -1,240 +1,265 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { fetchAnimeWithFilters } from '../utils/anilistApi';
+import { useNavigate } from 'react-router-dom';
+import { fetchAdvancedBrowse } from '../utils/anilistApi';
 import Loader from '../components/Loader';
+import PageSlider from '../components/PageSlider';
 
-const genres = [
-  { id: 1, name: 'Action' },
-  { id: 2, name: 'Adventure' },
-  { id: 3, name: 'Cars' },
-  { id: 4, name: 'Comedy' },
-  { id: 5, name: 'Dementia' },
-  { id: 6, name: 'Demons' },
-  { id: 7, name: 'Mystery' },
-  { id: 8, name: 'Drama' },
-  { id: 9, name: 'Ecchi' },
-  { id: 10, name: 'Fantasy' },
-  { id: 11, name: 'Game' },
-  { id: 12, name: 'Hentai' },
-  { id: 13, name: 'Historical' },
-  { id: 14, name: 'Horror' },
-  { id: 15, name: 'Kids' },
-  { id: 16, name: 'Magic' },
-  { id: 17, name: 'Martial Arts' },
-  { id: 18, name: 'Mecha' },
-  { id: 19, name: 'Music' },
-  { id: 20, name: 'Parody' },
-  { id: 21, name: 'Samurai' },
-  { id: 22, name: 'Romance' },
-  { id: 23, name: 'School' },
-  { id: 24, name: 'Sci-Fi' },
-  { id: 25, name: 'Shoujo' },
-  { id: 26, name: 'Shoujo Ai' },
-  { id: 27, name: 'Shounen' },
-  { id: 28, name: 'Shounen Ai' },
-  { id: 29, name: 'Space' },
-  { id: 30, name: 'Sports' },
-  { id: 31, name: 'Super Power' },
-  { id: 32, name: 'Vampire' },
-  { id: 33, name: 'Yaoi' },
-  { id: 34, name: 'Yuri' },
-  { id: 35, name: 'Harem' },
-  { id: 36, name: 'Slice of Life' },
-  { id: 37, name: 'Supernatural' },
-  { id: 38, name: 'Military' },
-  { id: 39, name: 'Police' },
-  { id: 40, name: 'Psychological' },
-  { id: 41, name: 'Thriller' },
-  { id: 42, name: 'Seinen' },
-  { id: 43, name: 'Josei' },
+const GENRES = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Horror',
+  'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance',
+  'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
 ];
 
-const types = ['tv', 'movie', 'ova', 'special', 'ona', 'music'];
-const statuses = ['airing', 'complete', 'upcoming'];
-const ratings = ['g', 'pg', 'pg13', 'r17', 'r', 'rx'];
+const FORMATS = [
+  { value: '', label: 'Any' },
+  { value: 'TV', label: 'TV' },
+  { value: 'TV_SHORT', label: 'TV Short' },
+  { value: 'MOVIE', label: 'Movie' },
+  { value: 'SPECIAL', label: 'Special' },
+  { value: 'OVA', label: 'OVA' },
+  { value: 'ONA', label: 'ONA' },
+  { value: 'MUSIC', label: 'Music' }
+];
+
+const SEASONS = [
+  { value: '', label: 'Any' },
+  { value: 'WINTER', label: 'Winter' },
+  { value: 'SPRING', label: 'Spring' },
+  { value: 'SUMMER', label: 'Summer' },
+  { value: 'FALL', label: 'Fall' }
+];
+
+const YEARS = [
+  { value: '', label: 'Any' },
+  ...Array.from({ length: new Date().getFullYear() - 1939 }, (_, i) => {
+    const year = new Date().getFullYear() - i;
+    return { value: year.toString(), label: year.toString() };
+  })
+];
+
+const SORT_OPTIONS = [
+  { value: 'POPULARITY_DESC', label: 'Popularity' },
+  { value: 'SCORE_DESC', label: 'Score' },
+  { value: 'TRENDING_DESC', label: 'Trending' },
+  { value: 'START_DATE_DESC', label: 'Newest' },
+  { value: 'START_DATE', label: 'Oldest' },
+  { value: 'TITLE_ROMAJI', label: 'A-Z' },
+  { value: 'TITLE_ROMAJI_DESC', label: 'Z-A' }
+];
 
 export default function FilterPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const typeParam = searchParams.get('type') || '';
-
-  const [filters, setFilters] = useState({
-    genre: '',
-    type: typeParam,
-    status: '',
-    rating: '',
-  });
   const [animeData, setAnimeData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    // Convert genre value to number if not empty string
-    const newValue = name === 'genre' && value !== '' ? Number(value) : value;
-    setFilters((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
-    setPage(1);
-  };
+  const [filters, setFilters] = useState({
+    search: '',
+    genres: [],
+    year: '',
+    season: '',
+    format: '',
+    sort: 'POPULARITY_DESC'
+  });
 
-  const lastCallTimeRef = React.useRef(0);
-  const throttleTimeoutRef = React.useRef(null);
+  useEffect(() => {
+    fetchData();
+  }, [currentPage, filters]);
 
-  const fetchFilteredAnime = async () => {
+  const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Remove empty filters
-      const activeFilters = {};
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) activeFilters[key] = value;
-      });
+      const apiFilters = {};
 
-      const now = Date.now();
-      const throttleDelay = 1000; // 1000ms throttle delay
-      const timeSinceLastCall = now - lastCallTimeRef.current;
+      if (filters.search) apiFilters.search = filters.search;
+      if (filters.format) apiFilters.format = [filters.format];
+      if (filters.season) apiFilters.season = filters.season;
+      if (filters.year) apiFilters.seasonYear = parseInt(filters.year);
+      if (filters.genres.length > 0) apiFilters.genres = filters.genres;
+      if (filters.sort) apiFilters.sort = [filters.sort];
 
-      if (timeSinceLastCall < throttleDelay) {
-        // Schedule the call after the remaining throttle delay
-        if (throttleTimeoutRef.current) {
-          clearTimeout(throttleTimeoutRef.current);
-        }
-        throttleTimeoutRef.current = setTimeout(async () => {
-          lastCallTimeRef.current = Date.now();
-          const data = await fetchAnimeWithFilters(activeFilters, page);
-          setAnimeData(data || []);
-          setLoading(false);
-        }, throttleDelay - timeSinceLastCall);
-      } else {
-        lastCallTimeRef.current = now;
-        const data = await fetchAnimeWithFilters(activeFilters, page);
-        setAnimeData(data || []);
-        setLoading(false);
-      }
+      const data = await fetchAdvancedBrowse(apiFilters, currentPage);
+      setAnimeData(data.media || []);
+      setTotalPages(data.pageInfo?.lastPage || 1);
     } catch (err) {
-      setError('Failed to fetch filtered anime');
-      setAnimeData([]);
-      setLoading(false);
       console.error('Error fetching filtered anime:', err);
+      setError('Failed to fetch anime data');
+      setAnimeData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchFilteredAnime();
-    }, 500);
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
 
-    return () => {
-      clearTimeout(delayDebounceFn);
-      if (throttleTimeoutRef.current) {
-        clearTimeout(throttleTimeoutRef.current);
-      }
-    };
-  }, [filters, page]);
+  const handleGenreToggle = (genre) => {
+    setFilters(prev => ({
+      ...prev,
+      genres: prev.genres.includes(genre)
+        ? prev.genres.filter(g => g !== genre)
+        : [...prev.genres, genre]
+    }));
+    setCurrentPage(1);
+  };
 
-  // Update URL query parameters when filters change
-  useEffect(() => {
-    const params = new URLSearchParams();
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
-
-    // Update the URL without reloading the page
-    navigate({ search: params.toString() }, { replace: true });
-  }, [filters, navigate]);
-
-  // Update filters state when URL query parameters change
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const newFilters = {
-      genre: searchParams.get('genre') || '',
-      type: searchParams.get('type') || '',
-      status: searchParams.get('status') || '',
-      rating: searchParams.get('rating') || '',
-    };
-    setFilters(newFilters);
-    setPage(1);
-  }, [location.search]);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <div className="p-4 text-white bg-[#19192c] min-h-screen">
-      <h1 className="text-3xl font-bold mb-4">Browse Anime</h1>
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-5 gap-4">
-        <select name="genre" value={filters.genre} onChange={handleFilterChange} className="bg-gray-800 p-2 rounded">
-          <option value="">All Genres</option>
-          {genres.map((g) => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </select>
-        <select name="type" value={filters.type} onChange={handleFilterChange} className="bg-gray-800 p-2 rounded">
-          <option value="">All Types</option>
-          {types.map((t) => (
-            <option key={t} value={t}>{t.toUpperCase()}</option>
-          ))}
-        </select>
-        <select name="status" value={filters.status} onChange={handleFilterChange} className="bg-gray-800 p-2 rounded">
-          <option value="">All Statuses</option>
-          {statuses.map((s) => (
-            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-          ))}
-        </select>
-        <select name="rating" value={filters.rating} onChange={handleFilterChange} className="bg-gray-800 p-2 rounded">
-          <option value="">All Ratings</option>
-          {ratings.map((r) => (
-            <option key={r} value={r}>{r.toUpperCase()}</option>
-          ))}
-        </select>
-      </div>
-      {loading && <Loader />}
-      {error && <div className="text-red-500">{error}</div>}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {animeData.length === 0 && !loading && <p>No data available.</p>}
-        {animeData.map((anime) => (
-          <div
-            key={anime.mal_id}
-            className="flex flex-col items-center cursor-pointer"
-            onClick={() => navigate(`/anime/${anime.mal_id}`)}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                navigate(`/anime/${anime.mal_id}`);
-              }
-            }}
-          >
-            <img
-              src={anime.images?.jpg?.image_url || anime.image_url || ''}
-              alt={anime.title || anime.name}
-              className="w-36 h-52 object-cover rounded-md shadow-lg"
-            />
-            <p className="text-sm mt-2 text-center truncate w-full" title={anime.title_english || anime.name}>
-              {anime.title || anime.name}
-            </p>
+    <div className="min-h-screen bg-gradient-to-b from-[#0b1622] to-[#0f1b2d] text-white">
+      {/* --- Filter Header --- */}
+      <div className="sticky top-0 z-30 bg-[#111b29]/95 backdrop-blur-lg border-b border-white/10 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+          <h1 className="text-2xl font-semibold text-white tracking-wide flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+            Advanced Filters
+          </h1>
+
+          {/* Filter Controls */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {/* Year */}
+            <select
+              value={filters.year}
+              onChange={(e) => handleFilterChange('year', e.target.value)}
+              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
+            >
+              {YEARS.map(year => <option key={year.value} value={year.value}>{year.label}</option>)}
+            </select>
+
+            {/* Season */}
+            <select
+              value={filters.season}
+              onChange={(e) => handleFilterChange('season', e.target.value)}
+              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
+            >
+              {SEASONS.map(season => <option key={season.value} value={season.value}>{season.label}</option>)}
+            </select>
+
+            {/* Format */}
+            <select
+              value={filters.format}
+              onChange={(e) => handleFilterChange('format', e.target.value)}
+              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
+            >
+              {FORMATS.map(format => <option key={format.value} value={format.value}>{format.label}</option>)}
+            </select>
+
+            {/* Sort */}
+            <select
+              value={filters.sort}
+              onChange={(e) => handleFilterChange('sort', e.target.value)}
+              className="px-3 py-2 bg-[#0b1622] border border-gray-700 rounded-lg hover:border-blue-500 focus:border-blue-500 outline-none text-sm"
+            >
+              {SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
           </div>
-        ))}
+
+          {/* Genre Toggle */}
+          <div className="flex justify-between items-center mt-2">
+            <p className="text-sm text-gray-400">
+              {filters.genres.length > 0 ? `${filters.genres.length} genres selected` : 'No genres selected'}
+            </p>
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-all"
+            >
+              {showAdvanced ? 'Hide Genres' : 'Show Genres'}
+            </button>
+          </div>
+
+          {/* Genre Selector */}
+          {showAdvanced && (
+            <div className="flex flex-wrap gap-2 mt-3 max-h-[200px] overflow-y-auto pb-2">
+              {GENRES.map((genre) => (
+                <button
+                  key={genre}
+                  onClick={() => handleGenreToggle(genre)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    filters.genres.includes(genre)
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-[#1a2332] hover:bg-[#223043] text-gray-300'
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex justify-center mt-4 space-x-4">
-        <button
-          onClick={() => setPage((p) => Math.max(p - 1, 1))}
-          disabled={page === 1}
-          className="bg-gray-700 px-4 py-2 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <span className="px-4 py-2">Page {page}</span>
-        <button
-          onClick={() => setPage((p) => p + 1)}
-          className="bg-gray-700 px-4 py-2 rounded"
-        >
-          Next
-        </button>
+
+      {/* --- Anime Results --- */}
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        {loading ? (
+          <div className="flex justify-center py-32">
+            <Loader />
+          </div>
+        ) : error ? (
+          <div className="text-center py-32 text-red-400 text-lg">{error}</div>
+        ) : (
+          <>
+            {animeData.length > 0 && (
+              <p className="text-sm text-gray-400 mb-4">
+                {animeData.length} results • Page {currentPage} of {totalPages}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+              {animeData.length === 0 ? (
+                <div className="col-span-full text-center py-20 text-gray-400 text-lg">
+                  No anime found. Try adjusting filters.
+                </div>
+              ) : (
+                animeData.map((anime) => (
+                  <div
+                    key={anime.id}
+                    onClick={() => navigate(`/anime/${anime.id}`)}
+                    className="group relative bg-[#111b29] rounded-xl overflow-hidden shadow-md hover:shadow-lg hover:scale-[1.03] transition-all cursor-pointer"
+                  >
+                    <img
+                      src={anime.coverImage?.large || anime.coverImage?.extraLarge}
+                      alt={anime.title?.romaji}
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+                    <div className="absolute top-2 right-2 bg-black/70 text-xs px-2 py-1 rounded">
+                      ⭐ {anime.averageScore ?? 'N/A'}
+                    </div>
+
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <h3 className="text-sm font-medium truncate text-white">
+                        {anime.title?.english || anime.title?.romaji}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {anime.seasonYear || ''} {anime.episodes ? `• ${anime.episodes} eps` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {animeData.length > 0 && (
+              <div className="mt-10">
+                <PageSlider
+                  page={currentPage}
+                  totalPages={totalPages}
+                  handlePageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
