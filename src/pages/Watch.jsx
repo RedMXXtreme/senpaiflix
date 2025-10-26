@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
+import { fetchIframeUrlFromHanimeHentai } from "../utils/streamingApi";
 
 export default function Watch() {
   const { id } = useParams();
@@ -15,6 +16,8 @@ export default function Watch() {
   const [recommendations, setRecommendations] = useState([]);
   const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [iframeUrl, setIframeUrl] = useState(null);
+  const [isIframeLoading, setIsIframeLoading] = useState(false);
   const episodesPerPage = 100;
 
   // Calculate pagination
@@ -115,7 +118,44 @@ export default function Watch() {
   const slugify = (str = "") =>
     str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
 
+  // Check if anime is hentai
+  const isHentai = anime?.genres?.includes("Hentai");
+
+  // Set default source type for hentai
+  useEffect(() => {
+    if (isHentai) {
+      setSourceType("hentai");
+      setActiveServer("HD-1");
+    }
+  }, [isHentai]);
+
+  // Fetch iframe URL for hentai
+  useEffect(() => {
+    if (isHentai && anime && episode) {
+      const fetchUrl = async () => {
+        setIsIframeLoading(true);
+        try {
+          const slug = slugify(anime.title?.english || anime.title?.romaji || "");
+          const url = await fetchIframeUrlFromHanimeHentai(slug, episode);
+          setIframeUrl(url);
+        } catch (error) {
+          console.error("Failed to fetch hentai iframe URL:", error);
+          setIframeUrl(null);
+        } finally {
+          setIsIframeLoading(false);
+        }
+      };
+      fetchUrl();
+    } else {
+      setIframeUrl(null);
+    }
+  }, [isHentai, anime, episode]);
+
   const getIframeUrl = () => {
+    if (isHentai) {
+      return iframeUrl || "";
+    }
+
     const slug = slugify(anime?.title?.english || anime?.title?.romaji || "");
     const ep = episode;
     const aniId = anime?.id;
@@ -354,65 +394,86 @@ export default function Watch() {
 
           {/* Server Buttons */}
           <div className="mt-5 bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
-            <div className="flex flex-wrap gap-3 items-center mb-3">
-              <span className="font-semibold">SUB:</span>
-              {["HD-1", "HD-2", "HD-3"].map((s) => (
+            {isHentai ? (
+              <div className="flex flex-wrap gap-3 items-center">
+                <span className="font-semibold">HENTAI:</span>
                 <button
-                  key={s}
                   onClick={() => {
-                    setActiveServer(s);
-                    setSourceType("sub");
+                    setActiveServer("HD-1");
+                    setSourceType("hentai");
                   }}
                   className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                    activeServer === s && sourceType === "sub"
+                    activeServer === "HD-1" && sourceType === "hentai"
                       ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
                       : "bg-[#222] hover:bg-[#333]"
                   }`}
                 >
-                  {s}
+                  HD-1
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-3 items-center mb-3">
+                  <span className="font-semibold">SUB:</span>
+                  {["HD-1", "HD-2", "HD-3"].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setActiveServer(s);
+                        setSourceType("sub");
+                      }}
+                      className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                        activeServer === s && sourceType === "sub"
+                          ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                          : "bg-[#222] hover:bg-[#333]"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="flex flex-wrap gap-3 items-center mb-3">
-              <span className="font-semibold">DUB:</span>
-              {["HD-1", "HD-2", "HD-3"].map((s) => (
-                <button
-                  key={`${s}-dub`}
-                  onClick={() => {
-                    setActiveServer(s);
-                    setSourceType("dub");
-                  }}
-                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                    activeServer === s && sourceType === "dub"
-                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
-                      : "bg-[#222] hover:bg-[#333]"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+                <div className="flex flex-wrap gap-3 items-center mb-3">
+                  <span className="font-semibold">DUB:</span>
+                  {["HD-1", "HD-2", "HD-3"].map((s) => (
+                    <button
+                      key={`${s}-dub`}
+                      onClick={() => {
+                        setActiveServer(s);
+                        setSourceType("dub");
+                      }}
+                      className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                        activeServer === s && sourceType === "dub"
+                          ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                          : "bg-[#222] hover:bg-[#333]"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="flex flex-wrap gap-3 items-center">
-              <span className="font-semibold">HINDI:</span>
-              {["HD-1", "HD-2"].map((s) => (
-                <button
-                  key={`${s}-hindi`}
-                  onClick={() => {
-                    setActiveServer(s);
-                    setSourceType("hindi");
-                  }}
-                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
-                    activeServer === s && sourceType === "hindi"
-                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
-                      : "bg-[#222] hover:bg-[#333]"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <span className="font-semibold">HINDI:</span>
+                  {["HD-1", "HD-2"].map((s) => (
+                    <button
+                      key={`${s}-hindi`}
+                      onClick={() => {
+                        setActiveServer(s);
+                        setSourceType("hindi");
+                      }}
+                      className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                        activeServer === s && sourceType === "hindi"
+                          ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                          : "bg-[#222] hover:bg-[#333]"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           {/* ✅ Seasons Section */}
           <div className="mt-6">
@@ -528,4 +589,3 @@ export default function Watch() {
     </div>
   );
 }
-
