@@ -376,12 +376,18 @@ export default function Watch() {
         <div className="flex-1">
           {/* Player */}
           <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-white/10">
-            <iframe
-              src={getIframeUrl()}
-              allowFullScreen
-              className="w-full h-full"
-              title="Anime Player"
-            />
+            {getIframeUrl() ? (
+              <iframe
+                src={getIframeUrl()}
+                allowFullScreen
+                className="w-full h-full"
+                title="Anime Player"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-white text-lg font-semibold">
+                Stream not available
+              </div>
+            )}
           </div>
 
           {/* Episode Info */}
