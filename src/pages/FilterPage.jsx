@@ -5,7 +5,7 @@ import Loader from '../components/Loader';
 import PageSlider from '../components/PageSlider';
 
 const GENRES = [
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Horror',
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Hentai', 'Fantasy', 'Horror',
   'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance',
   'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
 ];
@@ -114,12 +114,13 @@ export default function FilterPage() {
     setError(null);
     try {
       const apiFilters = {};
-      
+
       if (filters.search) apiFilters.search = filters.search;
       if (filters.format) apiFilters.format = [filters.format];
       if (filters.season) apiFilters.season = filters.season;
       if (filters.year) apiFilters.seasonYear = parseInt(filters.year);
       if (filters.genres.length > 0) apiFilters.genres = filters.genres;
+      if (filters.genres.includes('Hentai')) apiFilters.isAdult = true;
       if (filters.sort) apiFilters.sort = [filters.sort];
 
       const data = await fetchAdvancedBrowse(apiFilters, currentPage);
