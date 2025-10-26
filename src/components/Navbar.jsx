@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar";
 import React, { useState, useEffect } from "react";
 import { FaRandom, FaBell, FaUserCircle } from "react-icons/fa";
@@ -13,6 +13,7 @@ const SearchIcon = () => (
 );
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -124,17 +125,14 @@ const Navbar = () => {
       <Link to="/ongoing" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>ONGOING</Link>
       <Link to="/recent" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>RECENT</Link>
       <button
-            className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
-            onClick={() => window.location.href = '/waifu'}
-          >
-            Waifu Anime
-          </button>    
-          <button
-            className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
-            onClick={() => window.location.href = '/imbd'}
-          >
-            IMDb Search
-          </button>
+        className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
+        onClick={() => {
+          navigate('/waifu');
+          setIsDropdownOpen(false);
+        }}
+      >
+        Waifu Anime
+      </button>
           </div>
   )}
 </nav>

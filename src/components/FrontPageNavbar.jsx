@@ -74,9 +74,6 @@ const FrontPageNavbar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/imbd" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
-            IMBD Player
-          </Link>
         </li>
       </ul>
     </nav>

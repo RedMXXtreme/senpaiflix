@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import Loader from '../components/Loader';
 import { fetchAnimeDetail } from '../utils/anilistApi';
 import {
   FaPlay,
@@ -19,6 +18,81 @@ const Genre = ({ genre }) => (
   </span>
 );
 
+const SkeletonAnimeDetail = () => (
+  <div className="relative min-h-screen text-white bg-gray-900">
+    <div
+      className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-30"
+      style={{ backgroundImage: `url(https://via.placeholder.com/1920x1080/333333/333333)` }}
+      aria-hidden="true"
+    ></div>
+
+    <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+      {/* Left Skeleton */}
+      <div className="flex-shrink-0 w-full md:w-64 flex flex-col items-center gap-4">
+        <div className="rounded-xl shadow-lg w-full h-96 bg-gray-700 animate-pulse"></div>
+        <div className="bg-black text-pink-400 w-full text-center py-2 rounded-b-xl font-semibold text-sm mt-2">
+          <div className="h-4 bg-gray-700 rounded animate-pulse"></div>
+        </div>
+        <div className="flex gap-4 w-full">
+          <div className="bg-gray-700 rounded-full px-6 py-2 w-full h-10 animate-pulse"></div>
+          <div className="bg-gray-700 rounded-full px-6 py-2 w-full h-10 animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Center Skeleton */}
+      <div className="flex-1 flex flex-col gap-4">
+        <div className="h-4 bg-gray-700 rounded w-1/2 animate-pulse"></div>
+        <div className="h-8 bg-gray-700 rounded w-3/4 animate-pulse"></div>
+        <div className="flex gap-2">
+          <div className="h-6 bg-gray-700 rounded w-16 animate-pulse"></div>
+          <div className="h-6 bg-gray-700 rounded w-12 animate-pulse"></div>
+          <div className="h-6 bg-gray-700 rounded w-20 animate-pulse"></div>
+        </div>
+        <div className="h-4 bg-gray-700 rounded w-full animate-pulse"></div>
+        <div className="h-4 bg-gray-700 rounded w-5/6 animate-pulse"></div>
+        <div className="h-4 bg-gray-700 rounded w-4/5 animate-pulse"></div>
+        {/* Share Skeleton */}
+        <div className="flex items-center gap-4 mt-8">
+          <div className="w-12 h-12 bg-gray-700 rounded-full animate-pulse"></div>
+          <div>
+            <div className="h-4 bg-gray-700 rounded w-20 animate-pulse"></div>
+            <div className="h-3 bg-gray-700 rounded w-16 animate-pulse"></div>
+          </div>
+          <div className="ml-auto flex gap-2">
+            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Skeleton */}
+      <div className="w-72 flex-shrink-0 bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-xl p-6 text-sm space-y-3 border border-gray-700">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="flex justify-between">
+            <div className="h-4 bg-gray-700 rounded w-20 animate-pulse"></div>
+            <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Trailers Skeleton */}
+    <div className="mt-8 px-4">
+      <div className="h-6 bg-gray-700 rounded w-32 animate-pulse mb-4"></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="relative rounded-lg overflow-hidden shadow-lg bg-gray-700 animate-pulse" style={{ aspectRatio: "16/9" }}>
+            <div className="absolute bottom-2 left-2 h-4 w-12 bg-black bg-opacity-60 rounded animate-pulse"></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const AnimeDetail = () => {
   const { id } = useParams();
   const [anime, setAnime] = useState(null);
@@ -28,6 +102,7 @@ const AnimeDetail = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    setAnime(null); // Reset anime data when id changes
     const fetchAnime = async () => {
       try {
         const data = await fetchAnimeDetail(id);
@@ -93,7 +168,7 @@ const AnimeDetail = () => {
   };
 
  
-  if (!anime) return <div className="p-4 text-white"><Loader /></div>;
+  if (!anime) return <SkeletonAnimeDetail />;
 
   const badges = [
     { label: anime.rating, bgColor: "bg-white text-black" },

@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { BeatLoader } from "react-spinners";
 
 const SearchBar = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const debounceRef = useRef(null);
 
   const searchAniList = async (searchValue) => {
+    setLoading(true);
     try {
       const response = await fetch("https://graphql.anilist.co", {
         method: "POST",
@@ -45,6 +48,8 @@ const SearchBar = () => {
     } catch (error) {
       console.error("Error fetching from AniList:", error);
       setResults([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,58 +119,66 @@ const SearchBar = () => {
         </Link>
       </div>
 
-      {results.length > 0 && (
+      {(results.length > 0 || loading) && (
         <ul
           className="absolute bg-[#1a1a2e] text-white w-full max-w-full rounded max-h-[60vh] overflow-auto shadow-lg"
           style={{ zIndex: 10000, marginTop: "3.25rem" }}
         >
-          {results.map((anime) => (
-            <li
-              key={anime.id}
-              onClick={() => {
-                navigate(`/anime/${anime.id}`);
-                setQuery("");
-                setResults([]);
-              }}
-              className="flex items-center gap-3 p-2 hover:bg-gray-700 cursor-pointer"
-            >
-              <img
-                src={anime.coverImage?.large}
-                alt={anime.title.english || anime.title.romaji}
-                className="w-12 h-16 object-cover rounded"
-              />
-              <div className="flex flex-col flex-grow">
-                <span className="font-semibold text-white">
-                  {anime.title.english || anime.title.romaji}
-                </span>
-                <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-300">
-                  <span>
-                    {anime.description
-                      ? anime.description.replace(/<[^>]+>/g, "").slice(0, 50) +
-                        "..."
-                      : ""}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-400">
-                  <span>{anime.seasonYear || "?"}</span>
-                  <span>•</span>
-                  <span>{anime.format || "?"}</span>
-                  <span>•</span>
-                  <span>{anime.duration ? `${anime.duration}m` : "?"}</span>
-                </div>
-              </div>
+          {loading ? (
+            <li className="p-4 text-center">
+              <BeatLoader color="#ec4899" size={10} />
             </li>
-          ))}
-          <li
-            onClick={() => {
-              navigate(`/search?query=${query}`);
-              setQuery("");
-              setResults([]);
-            }}
-            className="p-2 mt-2 text-center text-sm font-semibold text-pink-500 hover:underline cursor-pointer"
-          >
-            View all results &rarr;
-          </li>
+          ) : (
+            <>
+              {results.map((anime) => (
+                <li
+                  key={anime.id}
+                  onClick={() => {
+                    navigate(`/anime/${anime.id}`);
+                    setQuery("");
+                    setResults([]);
+                  }}
+                  className="flex items-center gap-3 p-2 hover:bg-gray-700 cursor-pointer"
+                >
+                  <img
+                    src={anime.coverImage?.large}
+                    alt={anime.title.english || anime.title.romaji}
+                    className="w-12 h-16 object-cover rounded"
+                  />
+                  <div className="flex flex-col flex-grow">
+                    <span className="font-semibold text-white">
+                      {anime.title.english || anime.title.romaji}
+                    </span>
+                    <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-300">
+                      <span>
+                        {anime.description
+                          ? anime.description.replace(/<[^>]+>/g, "").slice(0, 50) +
+                            "..."
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-400">
+                      <span>{anime.seasonYear || "?"}</span>
+                      <span>•</span>
+                      <span>{anime.format || "?"}</span>
+                      <span>•</span>
+                      <span>{anime.duration ? `${anime.duration}m` : "?"}</span>
+                    </div>
+                  </div>
+                </li>
+              ))}
+              <li
+                onClick={() => {
+                  navigate(`/search?query=${query}`);
+                  setQuery("");
+                  setResults([]);
+                }}
+                className="p-2 mt-2 text-center text-sm font-semibold text-pink-500 hover:underline cursor-pointer"
+              >
+                View all results &rarr;
+              </li>
+            </>
+          )}
         </ul>
       )}
     </div>
@@ -173,86 +186,3 @@ const SearchBar = () => {
 };
 
 export default SearchBar;
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        </div>
-
-        {/* Filter Button */}
-        <Link
-          to="/filter"
-          className="hover:opacity-80 text-white absolute right-1 font-semibold px-3 py-1 rounded border border-pink-500 hover:bg-pink-600 transition"
-          style={{ zIndex: 10000, right: "0.5rem" }}
-        >
-          Filter
-        </Link>
-      </div>
-
-      {results.length > 0 && (
-        <ul
-          className="absolute bg-[#1a1a2e] text-white w-full max-w-full rounded max-h-[60vh] overflow-auto shadow-lg"
-          style={{ zIndex: 10000, marginTop: "3.25rem" }}
-        >
-          {results.map((anime) => (
-            <li
-              key={anime.id}
-              onClick={() => {
-                navigate(`/anime/${anime.id}`);
-                setQuery("");
-                setResults([]);
-              }}
-              className="flex items-center gap-3 p-2 hover:bg-gray-700 cursor-pointer"
-            >
-              {/* Thumbnail */}
-              <img
-                src={anime.coverImage?.large}
-                alt={anime.title.english || anime.title.romaji}
-                className="w-12 h-16 object-cover rounded"
-              />
-
-              {/* Info */}
-              <div className="flex flex-col flex-grow">
-                <span className="font-semibold text-white">
-                  {anime.title.english || anime.title.romaji}
-                </span>
-                <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-300">
-                  <span>
-                    {anime.description
-                      ? anime.description.replace(/<[^>]+>/g, "").slice(0, 50) + "..."
-                      : ""}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-400">
-                  <span>{anime.seasonYear || "?"}</span>
-                  <span>•</span>
-                  <span>{anime.format || "?"}</span>
-                  <span>•</span>
-                  <span>{anime.duration ? `${anime.duration}m` : "?"}</span>
-                </div>
-              </div>
-            </li>
-          ))}
-          <li
-            onClick={() => {
-              navigate(`/search?query=${query}`);
-              setQuery("");
-              setResults([]);
-            }}
-            className="p-2 mt-2 text-center text-sm font-semibold text-pink-500 hover:underline cursor-pointer"
-          >
-            View all results &rarr;
-          </li>
-        </ul>
-      )}
-    </div>
-  );
-};
-
-export default SearchBar;
-

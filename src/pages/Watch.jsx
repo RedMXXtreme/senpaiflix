@@ -13,6 +13,7 @@ export default function Watch() {
   const [releasedEpisodes, setReleasedEpisodes] = useState([]);
   const [seasons, setSeasons] = useState([]); // ✅ New: store related seasons
   const [recommendations, setRecommendations] = useState([]);
+  const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const episodesPerPage = 100;
 
@@ -100,9 +101,11 @@ export default function Watch() {
 
         // Fetch recommendations
         const recs = await fetchAnimeRecommendations(id);
-        setRecommendations(recs);
+        setRecommendations(recs.filter(rec => rec));
+        setIsRecommendationsLoading(false);
       } catch (err) {
         console.error("AniList fetch error:", err);
+        setIsRecommendationsLoading(false);
       }
     };
 
@@ -128,7 +131,7 @@ export default function Watch() {
         default:
           return "";
       }
-    } else {
+    } else if (sourceType === "dub") {
       switch (activeServer) {
         case "HD-1":
           return `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/dub`;
@@ -139,13 +142,86 @@ export default function Watch() {
         default:
           return "";
       }
+    } else if (sourceType === "hindi") {
+      switch (activeServer) {
+        case "HD-1":
+          return `https://vidnest.fun/anime/${aniId}/${ep}/satoru`;
+        case "HD-2":
+          return `https://vidnest.fun/anime/${aniId}/${ep}/hindi`;
+        default:
+          return "";
+      }
     }
   };
 
   if (!anime)
     return (
-      <div className="flex items-center justify-center min-h-screen text-gray-200 text-lg">
-        Loading...
+      <div className="relative min-h-screen font-inter text-white bg-[#0b0b0b] overflow-hidden">
+        {/* Blurred gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-600 via-[#0b0b0b] to-black opacity-40 blur-3xl"></div>
+        <div className="relative z-10 py-4 text-sm text-gray-300 flex items-center gap-1">
+          <div className="h-4 bg-gray-700 rounded w-16 animate-pulse"></div>
+          <span className="text-gray-500">/</span>
+          <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
+          <span className="text-gray-500">/</span>
+          <div className="h-4 bg-gray-700 rounded w-20 animate-pulse"></div>
+        </div>
+        <div className="relative flex flex-col md:flex-row gap-6 max-w-[1400px] mx-auto p-4 z-10">
+          {/* Left Sidebar Skeleton */}
+          <div className="w-full md:w-[20%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+            <div className="h-6 bg-gray-700 rounded mb-3 animate-pulse"></div>
+            <div className="space-y-2">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="h-10 bg-gray-700 rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+          {/* Middle Section Skeleton */}
+          <div className="flex-1">
+            <div className="aspect-video bg-gray-700 rounded-2xl animate-pulse"></div>
+            <div className="mt-4 h-12 bg-gray-700 rounded-lg animate-pulse"></div>
+            <div className="mt-5 bg-[#141414]/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+              <div className="flex flex-wrap gap-3 items-center mb-3">
+                <div className="h-4 bg-gray-700 rounded w-8 animate-pulse"></div>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-8 bg-gray-700 rounded w-12 animate-pulse"></div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-3 items-center mb-3">
+                <div className="h-4 bg-gray-700 rounded w-8 animate-pulse"></div>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-8 bg-gray-700 rounded w-12 animate-pulse"></div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="h-4 bg-gray-700 rounded w-12 animate-pulse"></div>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="h-8 bg-gray-700 rounded w-12 animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Right Sidebar Skeleton */}
+          <div className="w-full md:w-[25%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+            <div className="h-48 bg-gray-700 rounded-xl mb-4 animate-pulse"></div>
+            <div className="h-6 bg-gray-700 rounded mb-2 animate-pulse"></div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-6 bg-gray-700 rounded w-12 animate-pulse"></div>
+              ))}
+            </div>
+            <div className="space-y-2 mb-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-4 bg-gray-700 rounded animate-pulse"></div>
+              ))}
+            </div>
+            <div className="h-10 bg-gray-700 rounded-lg mb-4 animate-pulse"></div>
+            <div className="text-center">
+              <div className="h-8 bg-gray-700 rounded w-16 mx-auto mb-2 animate-pulse"></div>
+              <div className="h-4 bg-gray-700 rounded w-20 mx-auto animate-pulse"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
 
@@ -298,7 +374,7 @@ export default function Watch() {
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap gap-3 items-center mb-3">
               <span className="font-semibold">DUB:</span>
               {["HD-1", "HD-2", "HD-3"].map((s) => (
                 <button
@@ -309,6 +385,26 @@ export default function Watch() {
                   }}
                   className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
                     activeServer === s && sourceType === "dub"
+                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                      : "bg-[#222] hover:bg-[#333]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3 items-center">
+              <span className="font-semibold">HINDI:</span>
+              {["HD-1", "HD-2"].map((s) => (
+                <button
+                  key={`${s}-hindi`}
+                  onClick={() => {
+                    setActiveServer(s);
+                    setSourceType("hindi");
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                    activeServer === s && sourceType === "hindi"
                       ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
                       : "bg-[#222] hover:bg-[#333]"
                   }`}
@@ -363,7 +459,7 @@ export default function Watch() {
         </div>
       </div>
 {/* --- Recommendations Section --- */}
-{recommendations.length > 0 && (
+{(recommendations.length > 0 || isRecommendationsLoading) && (
   <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 py-8 mt-10 
                   bg-[#141414]/80 backdrop-blur-lg rounded-2xl 
                   border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
@@ -379,38 +475,51 @@ export default function Watch() {
         grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8
       "
     >
-      {recommendations.map((rec) => (
-        <Link
-          key={rec.id}
-          to={`/anime/${rec.id}`}
-          className="
-            group relative overflow-hidden rounded-xl 
-            bg-[#1c1c1c] transition-all duration-300 
-            hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]
-          "
-        >
-          <div className="relative">
-            <img
-              src={rec.cover}
-              alt={rec.title}
-              className="
-                w-full h-48 sm:h-56 md:h-60 lg:h-64 
-                object-cover rounded-xl 
-                transition-transform duration-500 group-hover:scale-110
-              "
-            />
-            <div className="absolute inset-0 bg-gradient-to-t 
-                            from-black/80 via-black/20 to-transparent 
-                            opacity-0 group-hover:opacity-100 
-                            transition-opacity duration-500"></div>
-            <div className="absolute bottom-2 left-2 right-2 
-                            text-center text-xs sm:text-sm md:text-base 
-                            font-semibold text-white leading-tight">
-              {rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title}
+      {isRecommendationsLoading ? (
+        Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="group relative overflow-hidden rounded-xl bg-[#1c1c1c]">
+            <div className="relative">
+              <div className="w-full h-48 sm:h-56 md:h-60 lg:h-64 bg-gray-700 rounded-xl animate-pulse"></div>
+              <div className="absolute bottom-2 left-2 right-2 text-center text-xs sm:text-sm md:text-base font-semibold text-white leading-tight">
+                <div className="h-4 bg-gray-600 rounded animate-pulse"></div>
+              </div>
             </div>
           </div>
-        </Link>
-      ))}
+        ))
+      ) : (
+        recommendations.map((rec) => (
+          <Link
+            key={rec.id}
+            to={`/anime/${rec.id}`}
+            className="
+              group relative overflow-hidden rounded-xl
+              bg-[#1c1c1c] transition-all duration-300
+              hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]
+            "
+          >
+            <div className="relative">
+              <img
+                src={rec.cover}
+                alt={rec.title}
+                className="
+                  w-full h-48 sm:h-56 md:h-60 lg:h-64
+                  object-cover rounded-xl
+                  transition-transform duration-500 group-hover:scale-110
+                "
+              />
+              <div className="absolute inset-0 bg-gradient-to-t
+                              from-black/80 via-black/20 to-transparent
+                              opacity-0 group-hover:opacity-100
+                              transition-opacity duration-500"></div>
+              <div className="absolute bottom-2 left-2 right-2
+                              text-center text-xs sm:text-sm md:text-base
+                              font-semibold text-white leading-tight">
+                {rec.title ? (rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title) : "Unknown Title"}
+              </div>
+            </div>
+          </Link>
+        ))
+      )}
     </div>
   </div>
 )}
@@ -419,3 +528,4 @@ export default function Watch() {
     </div>
   );
 }
+
