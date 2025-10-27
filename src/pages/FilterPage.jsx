@@ -110,6 +110,7 @@ export default function FilterPage() {
   }, [currentPage, filters]);
 
   const fetchData = async () => {
+    setAnimeData([]); // Clear previous data immediately
     setLoading(true);
     setError(null);
     try {
@@ -297,9 +298,27 @@ export default function FilterPage() {
       {/* Results */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader />
-          </div>
+          <>
+            <div className="mb-4 text-gray-400 text-sm">
+              <div className="h-4 bg-gray-700 rounded animate-pulse w-48"></div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+              {Array.from({ length: 20 }).map((_, idx) => (
+                <div key={idx} className="flex flex-col">
+                  <div className="relative overflow-hidden rounded-lg shadow-lg bg-gray-700 animate-pulse h-64"></div>
+                  <div className="mt-2">
+                    <div className="h-4 bg-gray-700 rounded animate-pulse mb-2"></div>
+                    <div className="h-3 bg-gray-700 rounded animate-pulse w-1/2 mb-2"></div>
+                    <div className="flex gap-1">
+                      <div className="h-3 bg-gray-700 rounded animate-pulse w-12"></div>
+                      <div className="h-3 bg-gray-700 rounded animate-pulse w-16"></div>
+                      <div className="h-3 bg-gray-700 rounded animate-pulse w-14"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : error ? (
           <div className="text-center py-20">
             <p className="text-red-500 text-lg">{error}</p>
