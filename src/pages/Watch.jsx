@@ -116,7 +116,7 @@ export default function Watch() {
   }, [id]);
 
   const slugify = (str = "") =>
-    str.toLowerCase().replace(/[^a-z0-9]/g, "");
+    str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
   // Check if anime is hentai
   const isHentai = anime?.genres?.includes("Hentai");
@@ -188,9 +188,9 @@ export default function Watch() {
     } else if (sourceType === "hindi") {
       switch (activeServer) {
         case "HD-1":
-          return `https://nhdapi.xyz/anime/${aniId}/${ep}/hindi`;
+          return `https://vidnest.fun/anime/${aniId}/${ep}/satoru`;
         case "HD-2":
-          return `https://nhdapi.xyz/anime/${aniId}/${ep}/satoru`; //https://nhdapi.xyz/anime/${aniId}/${ep}/satoru
+          return `https://vidnest.fun/anime/${aniId}/${ep}/hindi`;
         default:
           return "";
       }
