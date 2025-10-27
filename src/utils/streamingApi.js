@@ -5,7 +5,7 @@ const HanimeHentai = new Map();
 
 // Utility function to fetch with proxy and retry
 const fetchWithProxyRetry = async (url, options = {}, maxRetries = 3) => {
-  const proxy1 = `https://aniversehd.com/api/v1/streamingProxy?url=${encodeURIComponent(url)}`;
+  const proxy1 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
   const proxy2 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
 
   // Try the first proxy
