@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
+import Loader from "../components/Loader.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
 import { fetchIframeUrlFromHanimeHentai } from "../utils/streamingApi";
 
@@ -379,7 +380,11 @@ export default function Watch() {
         <div className="flex-1">
           {/* Player */}
           <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-white/10">
-            {getIframeUrl() ? (
+            {isIframeLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader />
+              </div>
+            ) : getIframeUrl() ? (
               <iframe
                 src={getIframeUrl()}
                 allowFullScreen
