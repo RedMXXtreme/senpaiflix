@@ -188,9 +188,9 @@ export default function Watch() {
     } else if (sourceType === "hindi") {
       switch (activeServer) {
         case "HD-1":
-          return `https://vidnest.fun/anime/${aniId}/${ep}/satoru`;
+          return `https://nhdapi.xyz/anime/${aniId}/${ep}/hindi`;
         case "HD-2":
-          return `https://vidnest.fun/anime/${aniId}/${ep}/hindi`;
+          return `https://nhdapi.xyz/anime/${aniId}/${ep}/satoru`; //https://nhdapi.xyz/anime/${aniId}/${ep}/satoru
         default:
           return "";
       }
