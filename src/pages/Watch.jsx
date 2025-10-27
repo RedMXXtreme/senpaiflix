@@ -116,7 +116,7 @@ export default function Watch() {
   }, [id]);
 
   const slugify = (str = "") =>
-    str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+    str.toLowerCase().replace(/[^a-z0-9]/g, "");
 
   // Check if anime is hentai
   const isHentai = anime?.genres?.includes("Hentai");
@@ -168,8 +168,12 @@ export default function Watch() {
           return `https://player.videasy.net/anime/${aniId}/${ep}?dub=false`;
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/sub`;
+        case "HD-4":
+          return `https://vidnest.fun/animepahe/${aniId}/${ep}/sub`;
         default:
           return "";
+
+          
       }
     } else if (sourceType === "dub") {
       switch (activeServer) {
@@ -179,8 +183,7 @@ export default function Watch() {
           return `https://player.videasy.net/anime/${aniId}/${ep}?dub=true`;
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/dub`;
-        default:
-          return "";
+
       }
     } else if (sourceType === "hindi") {
       switch (activeServer) {
@@ -421,7 +424,7 @@ export default function Watch() {
               <>
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">SUB:</span>
-                  {["HD-1", "HD-2", "HD-3"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4"].map((s) => (
                     <button
                       key={s}
                       onClick={() => {
