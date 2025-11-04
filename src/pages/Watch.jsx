@@ -4,7 +4,7 @@ import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
 import Loader from "../components/Loader.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
-import { fetchIframeUrlFromHanimeHentai } from "../utils/streamingApi";
+import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai } from "../utils/streamingApi";
 
 export default function Watch() {
   const { id } = useParams();
@@ -136,8 +136,13 @@ export default function Watch() {
       const fetchUrl = async () => {
         setIsIframeLoading(true);
         try {
-          const slug = slugify(anime.title?.english || anime.title?.romaji || "");
-          const url = await fetchIframeUrlFromHanimeHentai(slug, episode);
+          const slug = slugify(anime.title?.romaji || anime.title?.english || "");
+          let url;
+          if (activeServer === "HD-1") {
+            url = await fetchIframeUrlFromHanimeHentai(slug, episode);
+          } else if (activeServer === "HD-2") {
+            url = await fetchIframeUrlFromWatchHentai(slug, episode);
+          }
           setIframeUrl(url);
         } catch (error) {
           console.error("Failed to fetch hentai iframe URL:", error);
@@ -150,7 +155,7 @@ export default function Watch() {
     } else {
       setIframeUrl(null);
     }
-  }, [isHentai, anime, episode]);
+  }, [isHentai, anime, episode, activeServer]);
 
   const getIframeUrl = () => {
     if (isHentai) {
@@ -423,6 +428,19 @@ export default function Watch() {
                   }`}
                 >
                   HD-1
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveServer("HD-2");
+                    setSourceType("hentai");
+                  }}
+                  className={`px-3 py-1 rounded-lg font-semibold text-sm transition-all ${
+                    activeServer === "HD-2" && sourceType === "hentai"
+                      ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+                      : "bg-[#222] hover:bg-[#333]"
+                  }`}
+                >
+                  HD-2
                 </button>
               </div>
             ) : (

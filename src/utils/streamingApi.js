@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// Cache for HanimeHentai iframe URLs
-const HanimeHentai = new Map();
+// Cache for iframe URLs
+const iframeCache = new Map();
 
 // Utility function to fetch with proxy and retry
 const fetchWithProxyRetry = async (url, options = {}, maxRetries = 3) => {
@@ -26,16 +26,16 @@ const fetchWithProxyRetry = async (url, options = {}, maxRetries = 3) => {
   }
 };
 
-export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
-  const cacheKey = `slugify(${animeName})-${episode}`;
-  if (HanimeHentai.has(cacheKey)) {
-    console.log("Returning cached GogoAnime iframe URL for:", cacheKey);
-    return HanimeHentai.get(cacheKey);
+export async function fetchIframeUrlFromWatchHentai(animeName, episode) {
+  const cacheKey = `${animeName}-${episode}`;
+  if (iframeCache.has(cacheKey)) {
+    console.log("Returning cached WatchHentai iframe URL for:", cacheKey);
+    return iframeCache.get(cacheKey);
   }
   try {
-    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}/`;  //https://watchhentai.net/videos/${animeName}-episode-1/
+    const episodeUrl = `https://watchhentai.net/videos/${animeName}-episode-${episode}/`;
     // Ensure the episodeUrl is properly formatted
-    console.log("Fetching GogoAnime iframe URL from:", episodeUrl);
+    console.log("Fetching WatchHentai iframe URL from:", episodeUrl);
 
     // Removed sleep usage
 
@@ -47,13 +47,45 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
     if (iframeSrcMatch && iframeSrcMatch[1]) {
       console.log("Iframe URL found:", iframeSrcMatch[1]);
-      HanimeHentai.set(cacheKey, iframeSrcMatch[1]);
+      iframeCache.set(cacheKey, iframeSrcMatch[1]);
       return iframeSrcMatch[1];
     }
-    console.warn("Iframe URL not found in animeworld-india page.");
+    console.warn("Iframe URL not found in watchhentai.net page.");
     return null;
   } catch (error) {
-    console.error("Failed to fetch or parse animeworld-india episode page:", error);
+    console.error("Failed to fetch or parse watchhentai.net episode page:", error);
+    return null;
+  }
+}
+
+export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
+  const cacheKey = `${animeName}-${episode}`;
+  if (iframeCache.has(cacheKey)) {
+    console.log("Returning cached HanimeHentai iframe URL for:", cacheKey);
+    return iframeCache.get(cacheKey);
+  }
+  try {
+    const episodeUrl = `https://hanimehentai.tv/video/${animeName}/episode-${episode}/`;
+    // Ensure the episodeUrl is properly formatted
+    console.log("Fetching HanimeHentai iframe URL from:", episodeUrl);
+
+    // Removed sleep usage
+
+    const response = await fetchWithProxyRetry(episodeUrl);
+    console.log("Response status:", response.status);
+    const html = response.data;
+
+    // Updated regex to be more flexible and capture iframe src with or without quotes
+    const iframeSrcMatch = html.match(/<iframe[^>]*src=(?:"|')?([^"'>\s]+)(?:"|')?[^>]*>/i);
+    if (iframeSrcMatch && iframeSrcMatch[1]) {
+      console.log("Iframe URL found:", iframeSrcMatch[1]);
+      iframeCache.set(cacheKey, iframeSrcMatch[1]);
+      return iframeSrcMatch[1];
+    }
+    console.warn("Iframe URL not found in hanimehentai.tv page.");
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch or parse hanimehentai.tv episode page:", error);
     return null;
   }
 }
