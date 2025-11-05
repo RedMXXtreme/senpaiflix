@@ -1,126 +1,274 @@
+/**
+ * AniList API client with rate limiting, caching, and error handling
+ * @module anilistApi
+ */
+
 const ANILIST_URL = 'https://graphql.anilist.co';
 
-// Rate limiting and caching configuration
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const STALE_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days - use stale data as fallback
+// Configuration constants
+const CONFIG = {
+  CACHE_DURATION: 24 * 60 * 60 * 1000, // 24 hours
+  STALE_CACHE_DURATION: 7 * 24 * 60 * 60 * 1000, // 7 days
+  DEFAULT_RATE_LIMIT: 90,
+  DEFAULT_DELAY: 1500,
+  MAX_RETRIES: 5,
+  EXPONENTIAL_BACKOFF_BASE: 2000,
+  MAX_BACKOFF_DELAY: 60000,
+  JIKAN_DELAY: 350,
+  RANDOM_ID_MAX: 150000,
+  RANDOM_MAX_ATTEMPTS: 5,
+  PER_PAGE_DEFAULT: 24,
+  SEARCH_PER_PAGE: 10,
+  ADVANCED_BROWSE_PER_PAGE: 20,
+};
 
 // Rate limiting state
-let rateLimitRemaining = 90; // Default assumption
-let rateLimitLimit = 90;
-let rateLimitReset = Date.now() + 60000; // 1 minute from now
-let currentDelay = 1500; // Start with 1.5 second delay (more conservative)
-
-// Request queue to prevent concurrent bursts
-const requestQueue = [];
-let isProcessingQueue = false;
-
-// Cache storage
-const cache = new Map();
-
-// Utility functions
-const getCacheKey = (query, variables) => {
-  return JSON.stringify({ query: query.trim(), variables });
-};
-
-const isCacheValid = (timestamp) => {
-  return Date.now() - timestamp < CACHE_DURATION;
-};
-
-const isCacheStale = (timestamp) => {
-  return Date.now() - timestamp < STALE_CACHE_DURATION;
-};
-
-// Process request queue one at a time
-const processQueue = async () => {
-  if (isProcessingQueue || requestQueue.length === 0) {
-    return;
+class RateLimiter {
+  constructor() {
+    this.remaining = CONFIG.DEFAULT_RATE_LIMIT;
+    this.limit = CONFIG.DEFAULT_RATE_LIMIT;
+    this.reset = Date.now() + 60000;
+    this.currentDelay = CONFIG.DEFAULT_DELAY;
   }
 
-  isProcessingQueue = true;
+  updateFromHeaders(headers) {
+    if (!headers || typeof headers.get !== 'function') return;
 
-  while (requestQueue.length > 0) {
-    const { resolve, reject, fn } = requestQueue.shift();
-    try {
-      const result = await fn();
-      resolve(result);
-    } catch (error) {
-      reject(error);
-    }
-    // Add delay between queued requests
-    if (requestQueue.length > 0) {
-      await sleep(currentDelay);
-    }
+    const remaining = headers.get('x-ratelimit-remaining');
+    const limit = headers.get('x-ratelimit-limit');
+    const reset = headers.get('x-ratelimit-reset');
+
+    if (remaining !== null) this.remaining = parseInt(remaining, 10);
+    if (limit !== null) this.limit = parseInt(limit, 10);
+    if (reset !== null) this.reset = parseInt(reset, 10) * 1000;
+
+    this.adjustDelay();
   }
 
-  isProcessingQueue = false;
-};
+  adjustDelay() {
+    if (!this.limit || this.limit <= 0) {
+      this.currentDelay = CONFIG.DEFAULT_DELAY;
+      return;
+    }
 
-// Add request to queue
-const queueRequest = (fn) => {
-  return new Promise((resolve, reject) => {
-    requestQueue.push({ resolve, reject, fn });
-    processQueue();
-  });
-};
+    if (this.remaining <= 0) {
+      this.currentDelay = Math.max(5000, this.reset - Date.now());
+      return;
+    }
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-const updateRateLimitFromHeaders = (headers) => {
-  const remaining = headers.get('x-ratelimit-remaining');
-  const limit = headers.get('x-ratelimit-limit');
-  const reset = headers.get('x-ratelimit-reset');
-
-  if (remaining) rateLimitRemaining = parseInt(remaining);
-  if (limit) rateLimitLimit = parseInt(limit);
-  if (reset) rateLimitReset = parseInt(reset) * 1000; // Convert to milliseconds
-
-  // Dynamically adjust delay based on remaining requests
-  if (rateLimitRemaining > 0) {
-    const usageRatio = 1 - (rateLimitRemaining / rateLimitLimit);
-    const timeToReset = Math.max(1000, rateLimitReset - Date.now());
-    
-    // Calculate safe delay to avoid hitting rate limit
-    const safeRequestsPerMinute = Math.floor(rateLimitRemaining * 0.8); // Use only 80% of remaining
+    const usageRatio = 1 - (this.remaining / this.limit);
+    const safeRequestsPerMinute = Math.floor(this.remaining * 0.8);
     const minDelay = safeRequestsPerMinute > 0 ? Math.ceil(60000 / safeRequestsPerMinute) : 5000;
 
-    // Adjust delay based on usage ratio
     if (usageRatio < 0.3) {
-      currentDelay = Math.max(1000, minDelay); // More aggressive when plenty remaining
+      this.currentDelay = Math.max(1000, minDelay);
     } else if (usageRatio < 0.6) {
-      currentDelay = Math.max(1500, minDelay); // Moderate
+      this.currentDelay = Math.max(1500, minDelay);
     } else if (usageRatio < 0.8) {
-      currentDelay = Math.max(2500, minDelay); // Conservative
+      this.currentDelay = Math.max(2500, minDelay);
     } else {
-      currentDelay = Math.max(4000, minDelay); // Very conservative when low
+      this.currentDelay = Math.max(4000, minDelay);
     }
-  } else {
-    // No requests remaining, wait until reset
-    const waitTime = Math.max(5000, rateLimitReset - Date.now());
-    currentDelay = waitTime;
   }
+
+  shouldWaitForReset() {
+    return this.remaining <= 0 && Date.now() < this.reset;
+  }
+
+  getWaitTime() {
+    return Math.max(0, this.reset - Date.now()) + 1000;
+  }
+}
+
+// Cache management
+class CacheManager {
+  constructor() {
+    this.cache = new Map();
+  }
+
+  getKey(query, variables) {
+    return JSON.stringify({
+      query: (query || '').trim(),
+      variables: this.normalizeVariables(variables)
+    });
+  }
+
+  normalizeVariables(variables) {
+    // Remove undefined/null/empty values for consistent caching
+    const normalized = {};
+    for (const [key, value] of Object.entries(variables || {})) {
+      if (value !== undefined && value !== null && value !== '') {
+        normalized[key] = value;
+      }
+    }
+    return normalized;
+  }
+
+  isValid(timestamp) {
+    return Date.now() - timestamp < CONFIG.CACHE_DURATION;
+  }
+
+  isStale(timestamp) {
+    return Date.now() - timestamp < CONFIG.STALE_CACHE_DURATION;
+  }
+
+  get(cacheKey) {
+    return this.cache.get(cacheKey);
+  }
+
+  set(cacheKey, data) {
+    this.cache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  getStaleData(cacheKey) {
+    const cached = this.get(cacheKey);
+    return cached && this.isStale(cached.timestamp) ? cached.data : null;
+  }
+}
+
+// Request queue for sequential processing
+class RequestQueue {
+  constructor() {
+    this.queue = [];
+    this.isProcessing = false;
+    this.rateLimiter = null;
+  }
+
+  async add(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ resolve, reject, fn });
+      // don't await process here - it runs asynchronously
+      this.process();
+    });
+  }
+
+  async process() {
+    if (this.isProcessing || this.queue.length === 0) return;
+
+    this.isProcessing = true;
+
+    while (this.queue.length > 0) {
+      const { resolve, reject, fn } = this.queue.shift();
+      try {
+        const result = await fn();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+
+      if (this.queue.length > 0) {
+        const delay = this.rateLimiter?.currentDelay || CONFIG.DEFAULT_DELAY;
+        await sleep(delay);
+      }
+    }
+
+    this.isProcessing = false;
+  }
+}
+
+// Custom error classes
+class AniListError extends Error {
+  constructor(message, status, originalError = null) {
+    super(message);
+    this.name = 'AniListError';
+    this.status = status;
+    this.originalError = originalError;
+  }
+}
+
+class RateLimitError extends AniListError {
+  constructor(message, retryAfter = null) {
+    super(message, 429);
+    this.name = 'RateLimitError';
+    this.retryAfter = retryAfter;
+  }
+}
+
+class NetworkError extends AniListError {
+  constructor(message, originalError = null) {
+    super(message, 0, originalError);
+    this.name = 'NetworkError';
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message, field = null) {
+    super(message);
+    this.name = 'ValidationError';
+    this.field = field;
+  }
+}
+
+// Utility functions
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const validateId = (id, fieldName = 'id') => {
+  const numId = parseInt(id, 10);
+  if (isNaN(numId) || numId <= 0) {
+    throw new ValidationError(`${fieldName} must be a positive integer`, fieldName);
+  }
+  return numId;
 };
 
+const validatePage = (page) => {
+  const numPage = parseInt(page, 10);
+  if (isNaN(numPage) || numPage < 1) {
+    throw new ValidationError('Page must be a positive integer', 'page');
+  }
+  return numPage;
+};
+
+const validateSearchQuery = (search) => {
+  if (!search || typeof search !== 'string' || search.trim().length === 0) {
+    throw new ValidationError('Search query must be a non-empty string', 'search');
+  }
+  return search.trim();
+};
+
+// Logger utility
+const logger = {
+  warn: (message, ...args) => console.warn(`[AniList API] ${message}`, ...args),
+  error: (message, ...args) => console.error(`[AniList API] ${message}`, ...args),
+  info: (message, ...args) => console.info(`[AniList API] ${message}`, ...args),
+};
+
+// Initialize singletons
+const rateLimiter = new RateLimiter();
+const cacheManager = new CacheManager();
+const requestQueue = new RequestQueue();
+
+// Bind rate limiter to queue
+requestQueue.rateLimiter = rateLimiter;
+
+/**
+ * Internal function to send GraphQL queries to AniList
+ * @param {string} query - GraphQL query string
+ * @param {Object} variables - Query variables
+ * @param {number} retryCount - Current retry attempt
+ * @returns {Promise<Object>} Query result data
+ * @throws {AniListError|RateLimitError|NetworkError}
+ */
 const sendAniListQueryInternal = async (query, variables = {}, retryCount = 0) => {
-  const cacheKey = getCacheKey(query, variables);
+  const cacheKey = cacheManager.getKey(query, variables);
 
   // Check cache first
-  if (cache.has(cacheKey)) {
-    const cached = cache.get(cacheKey);
-    if (isCacheValid(cached.timestamp)) {
-      return cached.data;
-    }
-    // Don't delete stale cache - keep it as fallback
+  const cached = cacheManager.get(cacheKey);
+  if (cached && cacheManager.isValid(cached.timestamp)) {
+    return cached.data;
   }
 
-  // Check if we should wait for rate limit reset
-  if (rateLimitRemaining <= 0 && Date.now() < rateLimitReset) {
-    const waitTime = rateLimitReset - Date.now() + 1000; // Add 1s buffer
-    console.warn(`Rate limit exhausted. Waiting ${Math.ceil(waitTime / 1000)}s until reset...`);
+  // Check rate limit
+  if (rateLimiter.shouldWaitForReset()) {
+    const waitTime = rateLimiter.getWaitTime();
+    logger.warn(`Rate limit exhausted. Waiting ${Math.ceil(waitTime / 1000)}s until reset...`);
     await sleep(waitTime);
   }
 
-  // Rate limiting delay before request
-  await sleep(currentDelay);
+  // Rate limiting delay
+  await sleep(rateLimiter.currentDelay);
 
   try {
     const response = await fetch(ANILIST_URL, {
@@ -129,77 +277,93 @@ const sendAniListQueryInternal = async (query, variables = {}, retryCount = 0) =
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
+      body: JSON.stringify({ query, variables }),
     });
 
     // Update rate limiting from headers
-    updateRateLimitFromHeaders(response.headers);
+    rateLimiter.updateFromHeaders(response.headers);
 
-    // Handle rate limiting with exponential backoff
+    // Handle rate limiting
     if (response.status === 429) {
-      const maxRetries = 5;
-      if (retryCount < maxRetries) {
-        // Exponential backoff: 2^retryCount * 2000ms
-        const backoffDelay = Math.min(Math.pow(2, retryCount) * 2000, 60000); // Max 60s
-        const resetWait = Math.max(0, rateLimitReset - Date.now());
-        const waitTime = Math.max(backoffDelay, resetWait) + 1000; // Add 1s buffer
-        
-        console.warn(`Rate limited (429). Retry ${retryCount + 1}/${maxRetries} after ${Math.ceil(waitTime / 1000)}s...`);
-        await sleep(waitTime);
-        return sendAniListQueryInternal(query, variables, retryCount + 1);
-      } else {
-        // Max retries exceeded - try to use stale cache
-        const cached = cache.get(cacheKey);
-        if (cached && isCacheStale(cached.timestamp)) {
-          console.warn('Rate limit exceeded after max retries, using stale cached data');
-          return cached.data;
+      if (retryCount >= CONFIG.MAX_RETRIES) {
+        const staleData = cacheManager.getStaleData(cacheKey);
+        if (staleData) {
+          logger.warn('Rate limit exceeded after max retries, using stale cached data');
+          return staleData;
         }
-        throw new Error('Rate limit exceeded and no cached data available');
+        throw new RateLimitError('Rate limit exceeded and no cached data available');
       }
+
+      const backoffDelay = Math.min(
+        Math.pow(2, retryCount) * CONFIG.EXPONENTIAL_BACKOFF_BASE,
+        CONFIG.MAX_BACKOFF_DELAY
+      );
+      const resetWait = Math.max(0, rateLimiter.reset - Date.now());
+      const waitTime = Math.max(backoffDelay, resetWait) + 1000;
+
+      logger.warn(`Rate limited (429). Retry ${retryCount + 1}/${CONFIG.MAX_RETRIES} after ${Math.ceil(waitTime / 1000)}s...`);
+      await sleep(waitTime);
+      return sendAniListQueryInternal(query, variables, retryCount + 1);
     }
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new AniListError(`HTTP error! status: ${response.status}`, response.status);
     }
 
     const data = await response.json();
 
-    if (data.errors) {
-      throw new Error(data.errors[0].message);
+    if (data.errors && data.errors.length > 0) {
+      throw new AniListError(data.errors[0].message, response.status);
     }
 
-    // Cache the result
-    cache.set(cacheKey, {
-      data: data.data,
-      timestamp: Date.now(),
-    });
+    if (!data.data) {
+      throw new AniListError('Invalid response: missing data field', response.status);
+    }
 
+    // Cache successful response
+    cacheManager.set(cacheKey, data.data);
     return data.data;
+
   } catch (error) {
-    // Offline fallback for network errors - use stale cache if available
-    if (cache.has(cacheKey)) {
-      const cached = cache.get(cacheKey);
-      if (isCacheStale(cached.timestamp)) {
-        console.warn('Network error, using stale cached data:', error.message);
-        return cached.data;
-      }
+    if (error instanceof AniListError || error instanceof RateLimitError) {
+      throw error;
     }
-    throw error;
+
+    // Network or other errors - try stale cache
+    const staleData = cacheManager.getStaleData(cacheKey);
+    if (staleData) {
+      logger.warn('Network error, using stale cached data:', error?.message || error);
+      return staleData;
+    }
+
+    throw new NetworkError(`Request failed: ${error?.message || error}`, error);
   }
 };
 
-// Public API with request queuing
+/**
+ * Public API for sending GraphQL queries with queuing
+ * @param {string} query - GraphQL query string
+ * @param {Object} variables - Query variables
+ * @returns {Promise<Object>} Query result data
+ */
 export const sendAniListQuery = async (query, variables = {}) => {
-  return queueRequest(() => sendAniListQueryInternal(query, variables));
+  if (!query || typeof query !== 'string') {
+    throw new ValidationError('Query must be a non-empty string', 'query');
+  }
+
+  return requestQueue.add(() => sendAniListQueryInternal(query, variables));
 };
 
+/**
+ * Fetch new releases (RELEASING status, sorted by start date)
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
 export const fetchNewReleases = async (page = 1) => {
+  const validatedPage = validatePage(page);
   const query = `
     query ($page: Int) {
-      Page(page: $page, perPage: 24) {
+      Page(page: $page, perPage: ${CONFIG.PER_PAGE_DEFAULT}) {
         pageInfo {
           total
           currentPage
@@ -220,15 +384,24 @@ export const fetchNewReleases = async (page = 1) => {
       }
     }
   `;
-  const variables = { page };
-  const data = await sendAniListQuery(query, variables);
-  return { media: data.Page.media, totalPages: data.Page.pageInfo.lastPage };
+
+  const data = await sendAniListQuery(query, { page: validatedPage });
+  return {
+    media: data.Page.media || [],
+    totalPages: data.Page.pageInfo.lastPage || 1
+  };
 };
 
+/**
+ * Fetch upcoming releases (NOT_YET_RELEASED status, sorted by start date)
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
 export const fetchUpdates = async (page = 1) => {
+  const validatedPage = validatePage(page);
   const query = `
     query ($page: Int) {
-      Page(page: $page, perPage: 24) {
+      Page(page: $page, perPage: ${CONFIG.PER_PAGE_DEFAULT}) {
         pageInfo {
           total
           currentPage
@@ -249,15 +422,24 @@ export const fetchUpdates = async (page = 1) => {
       }
     }
   `;
-  const variables = { page };
-  const data = await sendAniListQuery(query, variables);
-  return { media: data.Page.media, totalPages: data.Page.pageInfo.lastPage };
+
+  const data = await sendAniListQuery(query, { page: validatedPage });
+  return {
+    media: data.Page.media || [],
+    totalPages: data.Page.pageInfo.lastPage || 1
+  };
 };
 
+/**
+ * Fetch ongoing anime (RELEASING status, sorted by popularity)
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
 export const fetchOngoing = async (page = 1) => {
+  const validatedPage = validatePage(page);
   const query = `
     query ($page: Int) {
-      Page(page: $page, perPage: 24) {
+      Page(page: $page, perPage: ${CONFIG.PER_PAGE_DEFAULT}) {
         pageInfo {
           total
           currentPage
@@ -278,15 +460,24 @@ export const fetchOngoing = async (page = 1) => {
       }
     }
   `;
-  const variables = { page };
-  const data = await sendAniListQuery(query, variables);
-  return { media: data.Page.media, totalPages: data.Page.pageInfo.lastPage };
+
+  const data = await sendAniListQuery(query, { page: validatedPage });
+  return {
+    media: data.Page.media || [],
+    totalPages: data.Page.pageInfo.lastPage || 1
+  };
 };
 
+/**
+ * Fetch recently updated anime (sorted by update time)
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
 export const fetchRecent = async (page = 1) => {
+  const validatedPage = validatePage(page);
   const query = `
     query ($page: Int) {
-      Page(page: $page, perPage: 24) {
+      Page(page: $page, perPage: ${CONFIG.PER_PAGE_DEFAULT}) {
         pageInfo {
           total
           currentPage
@@ -307,20 +498,48 @@ export const fetchRecent = async (page = 1) => {
       }
     }
   `;
-  const variables = { page };
-  const data = await sendAniListQuery(query, variables);
-  return { media: data.Page.media, totalPages: data.Page.pageInfo.lastPage };
+
+  const data = await sendAniListQuery(query, { page: validatedPage });
+  return {
+    media: data.Page.media || [],
+    totalPages: data.Page.pageInfo.lastPage || 1
+  };
 };
 
-export const fetchAnimeWithFilters = async (filters, page = 1) => {
+/**
+ * Fetch anime with basic filters
+ * NOTE: you asked for AND mode for multiple genres. AniList does not provide a direct "genre AND"
+ * filter server-side, so we request with genre_in to reduce the candidate set, then post-filter results
+ * to only keep entries that include ALL requested genres.
+ *
+ * @param {Object} filters - Filter object
+ * @param {string|Array<string>} filters.genre - Genre filter (string or array)
+ * @param {string} filters.type - Format filter
+ * @param {string} filters.status - Status filter
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Array>} Media array
+ */
+export const fetchAnimeWithFilters = async (filters = {}, page = 1) => {
+  const validatedPage = validatePage(page);
+
+  // Normalize genres: accept string or array
+  let genresArr = [];
+  if (filters.genre) {
+    if (Array.isArray(filters.genre)) {
+      genresArr = filters.genre.map(g => (typeof g === 'string' ? g.trim() : '')).filter(Boolean);
+    } else if (typeof filters.genre === 'string') {
+      genresArr = filters.genre.split(',').map(g => g.trim()).filter(Boolean);
+    }
+  }
+
   const query = `
-    query ($page: Int, $genre: String, $type: MediaFormat, $status: MediaStatus, $rating: String) {
-      Page(page: $page, perPage: 24) {
+    query ($page: Int, $genres: [String], $type: MediaFormat, $status: MediaStatus) {
+      Page(page: $page, perPage: ${CONFIG.PER_PAGE_DEFAULT}) {
         media(
           type: ANIME,
-          genre: $genre,
           format: $type,
           status: $status,
+          genre_in: $genres,
           sort: POPULARITY_DESC
         ) {
           id
@@ -336,28 +555,56 @@ export const fetchAnimeWithFilters = async (filters, page = 1) => {
               image_url
             }
           }
-          mal_id
+          idMal
+          genres
         }
       }
     }
   `;
 
   const variables = {
-    page,
-    genre: filters.genre ? undefined : filters.genre,
+    page: validatedPage,
+    genres: genresArr.length ? genresArr : undefined,
     type: filters.type ? filters.type.toUpperCase() : undefined,
     status: filters.status ? filters.status.toUpperCase() : undefined,
-    rating: filters.rating ? filters.rating.toUpperCase() : undefined,
   };
 
   // Remove undefined values
-  Object.keys(variables).forEach(key => variables[key] === undefined && delete variables[key]);
+  Object.keys(variables).forEach(key => {
+    if (variables[key] === undefined) delete variables[key];
+  });
 
   const data = await sendAniListQuery(query, variables);
-  return data.Page.media;
+  const media = data.Page.media || [];
+
+  // Post-filter for AND mode (ensure each returned media contains all requested genres)
+  if (genresArr.length > 0) {
+    const wantedSet = new Set(genresArr.map(g => g.toLowerCase()));
+    return media.filter(m => {
+      if (!Array.isArray(m.genres)) return false;
+      const mediaGenresLower = m.genres.map(x => x.toLowerCase());
+      return Array.from(wantedSet).every(g => mediaGenresLower.includes(g));
+    });
+  }
+
+  return media;
 };
 
+/**
+ * Advanced browse with comprehensive filters
+ * @param {Object} filters - Advanced filter object
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
 export const fetchAdvancedBrowse = async (filters = {}, page = 1) => {
+  const validatedPage = validatePage(page);
+
+  // Ensure format is an array if supplied as single value
+  const sanitizedFilters = { ...filters };
+  if (sanitizedFilters.format && !Array.isArray(sanitizedFilters.format)) {
+    sanitizedFilters.format = [sanitizedFilters.format];
+  }
+
   const query = `
     query (
       $page: Int = 1
@@ -392,7 +639,7 @@ export const fetchAdvancedBrowse = async (filters = {}, page = 1) => {
       $minimumTagRank: Int
       $sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]
     ) {
-      Page(page: $page, perPage: 20) {
+      Page(page: $page, perPage: ${CONFIG.ADVANCED_BROWSE_PER_PAGE}) {
         pageInfo {
           total
           currentPage
@@ -488,24 +735,33 @@ export const fetchAdvancedBrowse = async (filters = {}, page = 1) => {
   `;
 
   const variables = {
-    page,
+    page: validatedPage,
     type: 'ANIME',
-    ...filters
+    ...sanitizedFilters
   };
 
-  // Remove undefined values
-  Object.keys(variables).forEach(key => 
-    (variables[key] === undefined || variables[key] === null || variables[key] === '') && delete variables[key]
-  );
+  // Remove undefined/null/empty values
+  Object.keys(variables).forEach(key => {
+    const value = variables[key];
+    if (value === undefined || value === null || value === '') {
+      delete variables[key];
+    }
+  });
 
   const data = await sendAniListQuery(query, variables);
   return {
-    media: data.Page.media,
-    pageInfo: data.Page.pageInfo
+    media: data.Page.media || [],
+    pageInfo: data.Page.pageInfo || {}
   };
 };
 
+/**
+ * Fetch detailed anime information
+ * @param {number|string} id - Anime ID
+ * @returns {Promise<Object>} Anime details
+ */
 export const fetchAnimeDetail = async (id) => {
+  const validatedId = validateId(id);
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -541,12 +797,17 @@ export const fetchAnimeDetail = async (id) => {
     }
   `;
 
-  const variables = { id: parseInt(id) };
-  const data = await sendAniListQuery(query, variables);
+  const data = await sendAniListQuery(query, { id: validatedId });
   return data.Media;
 };
 
+/**
+ * Fetch anime watch information (for streaming)
+ * @param {number|string} id - Anime ID
+ * @returns {Promise<Object>} Anime watch data
+ */
 export const fetchAnimeWatch = async (id) => {
+  const validatedId = validateId(id);
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -594,16 +855,28 @@ export const fetchAnimeWatch = async (id) => {
     }
   `;
 
-  const variables = { id: parseInt(id) };
-  const data = await sendAniListQuery(query, variables);
+  const data = await sendAniListQuery(query, { id: validatedId });
   return data.Media;
 };
 
-export const fetchAnimeSearch = async (search) => {
+/**
+ * Search for anime
+ * @param {string} search - Search query
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Array>} Search results
+ */
+export const fetchAnimeSearch = async (search, page = 1) => {
+  const validatedSearch = validateSearchQuery(search);
+  const validatedPage = validatePage(page);
+
   const query = `
-    query ($search: String) {
-      Page(perPage: 10) {
-        media(search: $search, type: ANIME) {
+    query ($search: String, $page: Int = 1) {
+      Page(page: $page, perPage: ${CONFIG.SEARCH_PER_PAGE}) {
+        media(
+          type: ANIME,
+          search: $search,
+          sort: POPULARITY_DESC
+        ) {
           id
           title {
             romaji
@@ -621,12 +894,17 @@ export const fetchAnimeSearch = async (search) => {
     }
   `;
 
-  const variables = { search };
-  const data = await sendAniListQuery(query, variables);
-  return data.Page.media;
+  const data = await sendAniListQuery(query, { search: validatedSearch, page: validatedPage });
+  return data.Page.media || [];
 };
 
+/**
+ * Fetch anime recommendations
+ * @param {number|string} id - Anime ID
+ * @returns {Promise<Array>} Recommendations array
+ */
 export const fetchAnimeRecommendations = async (id) => {
+  const validatedId = validateId(id);
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -649,75 +927,79 @@ export const fetchAnimeRecommendations = async (id) => {
     }
   `;
 
-  const variables = { id: parseInt(id) };
-  const data = await sendAniListQuery(query, variables);
-  return data.Media.recommendations?.nodes?.map((r) => ({
+  const data = await sendAniListQuery(query, { id: validatedId });
+  const recommendations = data.Media.recommendations?.nodes || [];
+
+  return recommendations.map(r => ({
     id: r.mediaRecommendation?.id,
     title: r.mediaRecommendation?.title?.english || r.mediaRecommendation?.title?.romaji,
     cover: r.mediaRecommendation?.coverImage?.large,
     score: r.mediaRecommendation?.averageScore,
-  })) || [];
+  })).filter(rec => rec.id); // Filter out invalid recommendations
 };
 
-// Jikan API rate limiting (3 requests per second, 60 per minute)
+// Jikan API integration
 let jikanLastRequest = 0;
-const JIKAN_DELAY = 350; // 350ms between requests (safe margin)
 
+/**
+ * Fetch episode list from Jikan API (MyAnimeList)
+ * @param {number|string} idMal - MyAnimeList ID
+ * @returns {Promise<Array>} Episode IDs array
+ */
 export const fetchEpisodesFromJikan = async (idMal) => {
-  if (!idMal) {
-    console.warn('No MAL ID provided for Jikan API');
-    return [];
-  }
+  const validatedIdMal = validateId(idMal, 'idMal');
 
   try {
     // Rate limiting for Jikan API
     const now = Date.now();
     const timeSinceLastRequest = now - jikanLastRequest;
-    if (timeSinceLastRequest < JIKAN_DELAY) {
-      await sleep(JIKAN_DELAY - timeSinceLastRequest);
+    if (timeSinceLastRequest < CONFIG.JIKAN_DELAY) {
+      await sleep(CONFIG.JIKAN_DELAY - timeSinceLastRequest);
     }
     jikanLastRequest = Date.now();
 
-    const response = await fetch(`https://api.jikan.moe/v4/anime/${idMal}/episodes`);
-    
+    const response = await fetch(`https://api.jikan.moe/v4/anime/${validatedIdMal}/episodes`);
+
     if (response.status === 429) {
-      console.warn('Jikan API rate limited, waiting 2 seconds...');
+      logger.warn('Jikan API rate limited, waiting 2 seconds...');
       await sleep(2000);
       // Retry once
-      const retryResponse = await fetch(`https://api.jikan.moe/v4/anime/${idMal}/episodes`);
+      const retryResponse = await fetch(`https://api.jikan.moe/v4/anime/${validatedIdMal}/episodes`);
       if (!retryResponse.ok) {
-        throw new Error(`Jikan API error: ${retryResponse.status}`);
+        throw new AniListError(`Jikan API error: ${retryResponse.status}`, retryResponse.status);
       }
       const retryData = await retryResponse.json();
       return retryData.data?.map(ep => ep.mal_id) || [];
     }
 
     if (!response.ok) {
-      throw new Error(`Jikan API error: ${response.status}`);
+      throw new AniListError(`Jikan API error: ${response.status}`, response.status);
     }
 
     const data = await response.json();
     return data.data?.map(ep => ep.mal_id) || [];
   } catch (error) {
-    console.error('Error fetching episodes from Jikan:', error);
+    if (error instanceof AniListError) throw error;
+    logger.error('Error fetching episodes from Jikan:', error);
     return [];
   }
 };
 
-// Helper function to estimate episodes based on anime format and status
+/**
+ * Estimate episode count based on format and status
+ * @param {string} format - Anime format
+ * @param {string} status - Anime status
+ * @returns {Array<number>} Array of episode numbers
+ */
 export const estimateEpisodes = (format, status) => {
-  // Provide reasonable defaults based on format
   if (status === 'RELEASING') {
-    // For currently airing shows, assume at least 1 episode
-    return [1];
+    return [1]; // At least 1 episode for airing shows
   }
 
   switch (format) {
     case 'TV':
-      // Most TV anime have 12-13 or 24-26 episodes
       return Array.from({ length: 12 }, (_, i) => i + 1);
     case 'TV_SHORT':
-      // Short format usually 12-13 episodes
       return Array.from({ length: 12 }, (_, i) => i + 1);
     case 'MOVIE':
       return [1];
@@ -725,23 +1007,20 @@ export const estimateEpisodes = (format, status) => {
       return [1];
     case 'OVA':
     case 'ONA':
-      // OVAs typically have 1-6 episodes
       return Array.from({ length: 6 }, (_, i) => i + 1);
     default:
-      // Default fallback
       return Array.from({ length: 12 }, (_, i) => i + 1);
   }
 };
 
-// Fetch a random anime from AniList (optimized for speed)
+/**
+ * Fetch a random anime
+ * @returns {Promise<Object>} Random anime data
+ */
 export const fetchRandomAnime = async () => {
-  // Generate a random ID between 1 and 150000 (AniList's approximate range)
-  // We'll try a few times to find a valid anime
-  const maxAttempts = 5;
-  
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const randomId = Math.floor(Math.random() * 150000) + 1;
-    
+  for (let attempt = 0; attempt < CONFIG.RANDOM_MAX_ATTEMPTS; attempt++) {
+    const randomId = Math.floor(Math.random() * CONFIG.RANDOM_ID_MAX) + 1;
+
     const query = `
       query ($id: Int) {
         Media(id: $id, type: ANIME) {
@@ -756,20 +1035,20 @@ export const fetchRandomAnime = async () => {
 
     try {
       const data = await sendAniListQuery(query, { id: randomId });
-      
-      if (data && data.Media && data.Media.id) {
-        console.log(`Random anime found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id})`);
+
+      if (data?.Media?.id) {
+        logger.info(`Random anime found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id})`);
         return data.Media;
       }
     } catch (error) {
-      // ID doesn't exist, try next attempt
+      // Continue to next attempt
       continue;
     }
   }
-  
-  // If all attempts fail, use a fallback popular anime
-  console.warn('Could not find random anime after multiple attempts, using fallback');
-  return { 
+
+  // Fallback
+  logger.warn('Could not find random anime after multiple attempts, using fallback');
+  return {
     id: 16498, // Attack on Titan
     title: {
       romaji: 'Shingeki no Kyojin',
@@ -777,3 +1056,6 @@ export const fetchRandomAnime = async () => {
     }
   };
 };
+
+// Export error classes for external use
+export { AniListError, RateLimitError, NetworkError, ValidationError };

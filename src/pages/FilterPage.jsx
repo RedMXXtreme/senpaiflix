@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+// UPDATED FILTER PAGE WITH OPTION C APPLIED
+// (debounce + abort controller + fixed URL sync)
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchAdvancedBrowse } from '../utils/anilistApi';
 import Loader from '../components/Loader';
@@ -31,7 +34,7 @@ const SEASONS = [
 
 const YEARS = [
   { value: '', label: 'Any' },
-  ...Array.from({ length: new Date().getFullYear() - 1939 }, (_, i) => {
+  ...Array.from({ length: new Date().getFullYear() - 1939 + 1 }, (_, i) => {
     const year = new Date().getFullYear() - i;
     return { value: year.toString(), label: year.toString() };
   })
@@ -57,6 +60,9 @@ export default function FilterPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const abortRef = useRef(null);
+  const debounceRef = useRef(null);
+
   const [filters, setFilters] = useState({
     search: '',
     genres: [],
@@ -66,7 +72,6 @@ export default function FilterPage() {
     sort: 'POPULARITY_DESC'
   });
 
-  // Initialize filters from URL on component mount
   useEffect(() => {
     const urlFilters = {
       search: searchParams.get('search') || '',
@@ -76,24 +81,18 @@ export default function FilterPage() {
       format: searchParams.get('format') || '',
       sort: searchParams.get('sort') || 'POPULARITY_DESC'
     };
-    
+
     const urlPage = searchParams.get('page');
-    if (urlPage) {
-      setCurrentPage(parseInt(urlPage));
-    }
-    
+    if (urlPage) setCurrentPage(parseInt(urlPage));
+
     setFilters(urlFilters);
-    
-    // Show advanced filters if genres are selected
-    if (urlFilters.genres.length > 0) {
-      setShowAdvanced(true);
-    }
+
+    if (urlFilters.genres.length > 0) setShowAdvanced(true);
   }, []);
 
-  // Update URL when filters or page changes
   useEffect(() => {
     const params = new URLSearchParams();
-    
+
     if (filters.search) params.set('search', filters.search);
     if (filters.genres.length > 0) params.set('genres', filters.genres.join(','));
     if (filters.year) params.set('year', filters.year);
@@ -101,16 +100,23 @@ export default function FilterPage() {
     if (filters.format) params.set('format', filters.format);
     if (filters.sort && filters.sort !== 'POPULARITY_DESC') params.set('sort', filters.sort);
     if (currentPage > 1) params.set('page', currentPage.toString());
-    
-    setSearchParams(params, { replace: true });
-  }, [filters, currentPage, setSearchParams]);
+
+    const newP = params.toString();
+    const oldP = searchParams.toString();
+
+    if (newP !== oldP) setSearchParams(params, { replace: true });
+  }, [filters, currentPage]);
 
   useEffect(() => {
-    fetchData();
-  }, [currentPage, filters]);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchData(), 400);
+  }, [filters, currentPage]);
 
   const fetchData = async () => {
-    setAnimeData([]); // Clear previous data immediately
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    setAnimeData([]);
     setLoading(true);
     setError(null);
     try {
@@ -124,12 +130,11 @@ export default function FilterPage() {
       if (filters.genres.includes('Hentai')) apiFilters.isAdult = true;
       if (filters.sort) apiFilters.sort = [filters.sort];
 
-      const data = await fetchAdvancedBrowse(apiFilters, currentPage);
+      const data = await fetchAdvancedBrowse(apiFilters, currentPage, abortRef.current.signal);
       setAnimeData(data.media || []);
       setTotalPages(data.pageInfo?.lastPage || 1);
     } catch (err) {
-      console.error('Error fetching filtered anime:', err);
-      setError('Failed to fetch anime data');
+      if (err.name !== 'AbortError') setError('Failed to fetch anime data');
       setAnimeData([]);
     } finally {
       setLoading(false);
@@ -156,7 +161,7 @@ export default function FilterPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  return (
+ return (
     <div className="min-h-screen bg-[#0b1622] text-white">
       {/* Filter Bar */}
       <div className="bg-[#151f2e] border-b border-gray-700">
@@ -395,4 +400,4 @@ export default function FilterPage() {
       </div>
     </div>
   );
-}
+};
