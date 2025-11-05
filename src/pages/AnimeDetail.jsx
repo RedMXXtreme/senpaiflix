@@ -221,7 +221,7 @@ const AnimeDetail = () => {
         {/* Center */}
         <div className="flex-1 flex flex-col gap-4">
           <p className="text-sm text-gray-400">
-            Home &bull; {anime.type} &bull; {anime.romaji || anime.title}
+            <a href="/home">Home</a> &bull; {anime.type} &bull; {anime.romaji || anime.title}
           </p>
           <h1 className="text-4xl font-extrabold">{anime.romaji || anime.title}</h1>
 
