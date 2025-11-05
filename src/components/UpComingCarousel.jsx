@@ -1,97 +1,191 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { sendAniListQuery } from '../utils/anilistApi';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FaPlay, FaClosedCaptioning } from "react-icons/fa";
+import { MdSubtitles } from "react-icons/md";
 
-export default function UpComingGrid() {
-  const [animeData, setAnimeData] = useState([]);
-  const navigate = useNavigate();
+const TABS = [
+  { label: "All", code: "ALL" },
+  { label: "Japan", code: "JP" },
+  { label: "China", code: "CN" },
+  { label: "South Korea", code: "KR" },
+];
+
+const UpComingCarousel = () => {
+  const [animeList, setAnimeList] = useState([]);
+  const [activeTab, setActiveTab] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const fetchAnime = async () => {
-      try {
-        const query = `
-          query {
-            Page(perPage: 24) {
-              media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
-                id
-                title {
-                  romaji
-                }
-                coverImage {
-                  large
-                }
-                episodes
-                format
-                averageScore
-              }
+    fetchLatest();
+  }, [activeTab, currentPage]);
+
+  const fetchLatest = async () => {
+    setLoading(true);
+    try {
+      const filter =
+        activeTab !== "ALL" ? `, countryOfOrigin: ${JSON.stringify(activeTab)}` : "";
+
+      const query = `
+      query {
+        Page(page: ${currentPage}, perPage: 20) {
+          media(sort: POPULARITY_DESC, type: ANIME${filter}) {
+            id
+            title {
+              romaji
+              english
             }
+            coverImage {
+              large
+            }
+            countryOfOrigin
+            episodes
+            format
+            type
+            status
           }
-        `;
-        const data = await sendAniListQuery(query);
-        setAnimeData(data.Page.media);
-      } catch (error) {
-        console.error('Error fetching anime data:', error);
+        }
+      }`;
+
+      const res = await fetch("https://graphql.anilist.co", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      const data = await res.json();
+      if (data.errors) {
+        console.error("GraphQL errors:", data.errors);
+        setAnimeList([]);
+      } else {
+        setAnimeList(data?.data?.Page?.media || []);
       }
-    };
-    fetchAnime();
-  }, []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="bg-[#0f0f1c] min-h-screen text-white py-8 px-4">
-      <h2 className="text-3xl font-bold mb-6 max-w-screen-xl mx-auto">Latest Update</h2>
-
-      <div className="max-w-screen-xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-        {animeData.map((anime, index) => (
-          <div
-            key={anime.id}
-            className="relative cursor-pointer flex flex-col items-center"
-            onClick={() => navigate(`/anime/${anime.id}`)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') navigate(`/anime/${anime.id}`);
-            }}
-          >
-            <div className="relative cursor-pointer flex flex-col items-center">
-  {/* Top-left tags */}
-  <div className="absolute top-1 left-1 flex gap-1 z-10">
-    <span className="bg-orange-600 text-xs px-1 py-0.5 rounded text-white font-bold">
-      CC {anime.averageScore ? Math.floor(anime.averageScore / 10) : 'NR'}
-    </span>
-    {anime.episodes && (
-      <span className="bg-green-600 text-xs px-1 py-0.5 rounded text-white font-bold">
-        {anime.episodes}
-      </span>
-    )}
-  </div>
-
-  {/* Image */}
-  <img
-    src={anime.coverImage.large}
-    alt={anime.title.romaji}
-    className="w-full h-52 object-cover rounded-lg shadow-md transition-transform transform hover:scale-105"
-  />
-
-  {/* Title */}
-  <p
-    className="font-medium text-sm text-center w-full mt-2 px-2 line-clamp-1"
-    title={anime.title.romaji}
+    <section className="p-6">
+      {/* Header + Tabs */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-4">
+          <h2 className="text-white text-2xl font-bold">LATEST UPDATES</h2>
+<div className="flex items-center justify-center gap-3 mt-4">
+  {/* Prev Button */}
+  <button
+    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+    disabled={currentPage === 1}
+    className={`flex items-center gap-1 px-4 py-2 rounded-xl font-medium transition-all duration-200
+      ${currentPage === 1 
+        ? "bg-gray-700/50 text-gray-400 cursor-not-allowed"
+        : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md hover:shadow-lg"
+      }`}
   >
-    {anime.title.romaji}
-  </p>
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+    Prev
+  </button>
 
-  {/* Format */}
-  <div className="mt-1 flex gap-1 items-center text-xs font-semibold">
-    {anime.format && (
-      <span className="bg-white text-black px-2 py-0.5 rounded shadow">
-        {anime.format}
-      </span>
-    )}
-  </div>
+  {/* Page Indicator */}
+  <span className="text-white bg-gray-800 px-4 py-2 rounded-lg text-sm font-semibold shadow-inner select-none">
+    Page {currentPage}
+  </span>
+
+  {/* Next Button */}
+  <button
+    onClick={() => setCurrentPage(currentPage + 1)}
+    className="flex items-center gap-1 px-4 py-2 rounded-xl font-medium bg-gradient-to-r from-indigo-600 to-purple-600 text-white 
+      hover:from-indigo-500 hover:to-purple-500 shadow-md hover:shadow-lg transition-all duration-200"
+  >
+    Next
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
 </div>
-          </div>
-        ))}
+
+        </div>
+        <div className="flex gap-3 text-gray-400">
+          {TABS.map((tab) => (
+            <button
+              key={tab.code}
+              className={`text-sm font-medium ${
+                activeTab === tab.code
+                  ? "text-green-400 border-b-2 border-green-400"
+                  : "hover:text-white"
+              }`}
+              onClick={() => setActiveTab(tab.code)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {/* Loader or Anime Cards */}
+      {loading ? (
+        <div className="flex flex-wrap gap-6">
+          {Array.from({ length: 10 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="w-[180px] rounded-2xl overflow-hidden bg-[#0f1117]"
+            >
+              <div className="relative h-[250px] w-full overflow-hidden rounded-t-2xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#1b1d25] via-[#2a2d37] to-[#1b1d25] animate-shimmer bg-[length:200%_100%]" />
+              </div>
+              <div className="p-2">
+                <div className="h-3 bg-[#2a2d37] rounded w-3/4 mb-2 animate-pulse" />
+                <div className="h-3 bg-[#2a2d37] rounded w-1/2 animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-6">
+          {animeList.map((anime) => (
+            <Link
+              key={anime.id}
+              to={`/anime/${anime.id}`}
+              className="w-[180px] bg-[#0f1117] rounded-2xl overflow-hidden shadow-md hover:scale-105 transition-transform duration-300"
+            >
+              <div className="relative">
+                <img
+                  src={anime.coverImage.large}
+                  alt={anime.title.english || anime.title.romaji}
+                  className="w-full h-[250px] object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                  <FaPlay className="text-green-400" /> {anime.format || "TV"}
+                </div>
+              </div>
+
+              <div className="p-2">
+                <h3 className="text-white text-sm font-semibold leading-tight line-clamp-2">
+                  {anime.title.english || anime.title.romaji}
+                </h3>
+
+                <div className="flex justify-between mt-2 text-xs text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <MdSubtitles className="text-green-400" />{" "}
+                    {anime.episodes || "?"}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <FaClosedCaptioning className="text-green-400" />{" "}
+                    {anime.countryOfOrigin}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
   );
-}
+};
+
+export default UpComingCarousel;
