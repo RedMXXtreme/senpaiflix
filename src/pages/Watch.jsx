@@ -176,6 +176,8 @@ export default function Watch() {
           return `https://vidnest.fun/anime/${aniId}/${ep}/sub`;
         case "HD-4":
           return `https://vidnest.fun/animepahe/${aniId}/${ep}/sub`;
+        case "HD-5":
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub`; //https://api.cinetaro.buzz/anime/anilist/154587/1/1/sub
         default:
           return "";
 
@@ -189,6 +191,10 @@ export default function Watch() {
           return `https://player.videasy.net/anime/${aniId}/${ep}?dub=true`;
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/dub`;
+        case "HD-4":
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub`; //https://api.cinetaro.buzz/anime/anilist/154587
+        default:
+          return "";
 
       }
     } else if (sourceType === "hindi") {
@@ -197,6 +203,8 @@ export default function Watch() {
           return `https://vidnest.fun/anime/${aniId}/${ep}/satoru`;
         case "HD-2":
           return `https://vidnest.fun/anime/${aniId}/${ep}/hindi`;
+        case "HD-3":
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/hindi`; //https://api.cinetaro.buzz/anime/anilist/154587/1/1/hindi
         default:
           return "";
       }
@@ -447,7 +455,7 @@ export default function Watch() {
               <>
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">SUB:</span>
-                  {["HD-1", "HD-2", "HD-3","HD-4"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5"].map((s) => (
                     <button
                       key={s}
                       onClick={() => {
@@ -467,7 +475,7 @@ export default function Watch() {
 
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">DUB:</span>
-                  {["HD-1", "HD-2", "HD-3"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4"].map((s) => (
                     <button
                       key={`${s}-dub`}
                       onClick={() => {
@@ -487,7 +495,7 @@ export default function Watch() {
 
                 <div className="flex flex-wrap gap-3 items-center">
                   <span className="font-semibold">HINDI:</span>
-                  {["HD-1", "HD-2"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3"].map((s) => (
                     <button
                       key={`${s}-hindi`}
                       onClick={() => {
