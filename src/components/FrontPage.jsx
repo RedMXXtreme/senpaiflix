@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./SearchBar";
 
 const FrontPage = () => {
+  const navigate = useNavigate();
   const videoUrls = [
     "https://v1.pinimg.com/videos/mc/720p/f6/3b/b8/f63bb8d17fe2c624412287df221a076b.mp4",
     "https://v1.pinimg.com/videos/iht/expMp4/9c/2f/09/9c2f095e92dffd9848338e3cc500821d_720w.mp4",
@@ -9,14 +11,35 @@ const FrontPage = () => {
     "https://v1.pinimg.com/videos/iht/expMp4/05/40/70/054070ffa0eb0314cf3d9f80a271abf4_720w.mp4",
     "https://v1.pinimg.com/videos/mc/720p/92/e6/0f/92e60f0b442860324b155fe025b2d1eb.mp4",
     "https://v1.pinimg.com/videos/iht/expMp4/98/1f/f9/981ff96105c30c7dbe25b7f6cf203ad9_720w.mp4",
-    "https://v1.pinimg.com/videos/mc/720p/91/72/6a/91726ac4a96b0a57002d17a4946909f4.mp4",   // Add more video URLs as needed
+    "https://v1.pinimg.com/videos/mc/720p/91/72/6a/91726ac4a96b0a57002d17a4946909f4.mp4",
   ];
 
   const [randomVideo, setRandomVideo] = useState(videoUrls[0]);
+  const [topSearches, setTopSearches] = useState([]);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * videoUrls.length);
     setRandomVideo(videoUrls[randomIndex]);
+  }, []);
+
+  useEffect(() => {
+    const q = `
+      query {
+        Page(perPage: 6) {
+          media(sort: TRENDING_DESC, type: ANIME) {
+            id
+            title { romaji english }
+          }
+        }
+      }
+    `;
+    fetch("https://graphql.anilist.co", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: q })
+    })
+      .then(res => res.json())
+      .then(json => setTopSearches(json.data.Page.media));
   }, []);
 
   return (
@@ -32,8 +55,7 @@ const FrontPage = () => {
             autoPlay
             loop
             muted
-          >
-          </video>
+          />
         </div>
 
         {/* Overlay */}
@@ -51,14 +73,33 @@ const FrontPage = () => {
             />
           </div>
 
-          {/* Top search */}
-          <p className="text-sm text-gray-300 animate-pulse px-4 mb-6">
-            One Piece, Lord Of Mysteries, Lazarus, To Be Hero, Witch Watch
-          </p>
+          {/* Top search — updated */}
+<div className="flex gap-2 flex-wrap justify-center mb-6 px-4">
+  {topSearches.map(a => (
+    <button
+      key={a.id}
+      onClick={() => navigate(`/anime/${a.id}`)}
+      className="
+        text-xs md:text-sm
+        px-3 py-1.5
+        rounded-full
+        bg-white/12
+        backdrop-blur-sm
+        border border-white/10
+        text-gray-200
+        hover:bg-green-500/50
+        hover:text-white
+        transition-all duration-200
+      "
+    >
+      {a.title.english || a.title.romaji}
+    </button>
+  ))}
+</div>
 
           {/* Watch now */}
           <button
-            onClick={() => window.location.href = "/home"}
+            onClick={() => navigate("/home")}
             className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
             WATCH NOW
@@ -75,7 +116,7 @@ const FrontPage = () => {
         <button className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">236</button>
       </div>
 
-      {/* Info Section */}
+  {/* Info Section */}
       <div className="max-w-4xl mt-10 text-left text-gray-300 space-y-6 px-2 md:px-0">
         <h2 className="text-2xl font-bold text-white uppercase">
           THE BEST SITE TO WATCH ANIME ONLINE FOR FREE
