@@ -33,7 +33,7 @@ export async function fetchIframeUrlFromWatchHentai(animeName, episode) {
     return iframeCache.get(cacheKey);
   }
   try {
-    const episodeUrl = `https://watchhentai.net/videos/${animeName}-episode-${episode}/`;
+    const episodeUrl = `https://watchhentai.net/videos/${animeName}-episode-${episode}-id-01/`; //https://watchhentai.net/videos/ane-wa-yanmama-junyuu-chuu-episode-1-id-01/
     // Ensure the episodeUrl is properly formatted
     console.log("Fetching WatchHentai iframe URL from:", episodeUrl);
 
