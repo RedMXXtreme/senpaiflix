@@ -1,5 +1,8 @@
 import axios from "axios";
 
+// TMDB API Key (replace with your actual key)
+const TMDB_API_KEY = "ff82c9fafd55fbb5f46e1ae14efc55e3";
+
 // Cache for iframe URLs
 const iframeCache = new Map();
 
@@ -86,6 +89,25 @@ export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
     return null;
   } catch (error) {
     console.error("Failed to fetch or parse hanimehentai.tv episode page:", error);
+    return null;
+  }
+}
+
+export async function fetchTMDBId(query) {
+  try {
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=true`;
+    const response = await axios.get(url);
+    const results = response.data.results;
+    if (results && results.length > 0) {
+      // Prioritize TV shows, then movies
+      const tvResult = results.find(result => result.media_type === 'tv');
+      const movieResult = results.find(result => result.media_type === 'movie');
+      const selectedResult = tvResult || movieResult || results[0];
+      return selectedResult.id;
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch TMDB ID:", error);
     return null;
   }
 }

@@ -4,7 +4,7 @@ import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
 import Loader from "../components/Loader.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
-import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai } from "../utils/streamingApi";
+import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai, fetchTMDBId } from "../utils/streamingApi";
 
 export default function Watch() {
   const { id } = useParams();
@@ -19,6 +19,7 @@ export default function Watch() {
   const [currentPage, setCurrentPage] = useState(1);
   const [iframeUrl, setIframeUrl] = useState(null);
   const [isIframeLoading, setIsIframeLoading] = useState(false);
+  const [tmdbId, setTmdbId] = useState(null);
   const episodesPerPage = 100;
 
   // Calculate pagination
@@ -103,6 +104,11 @@ export default function Watch() {
 
         setReleasedEpisodes(allEpisodes);
 
+        // Fetch TMDB ID
+        const query = media.title.english || media.title.romaji;
+        const tmdb = await fetchTMDBId(query);
+        setTmdbId(tmdb);
+
         // Fetch recommendations
         const recs = await fetchAnimeRecommendations(id);
         setRecommendations(recs.filter(rec => rec));
@@ -165,6 +171,7 @@ export default function Watch() {
     const slug = slugify(anime?.title?.english || anime?.title?.romaji || "");
     const ep = episode;
     const aniId = anime?.id;
+    const tmdb = tmdbId || aniId; // Use TMDB ID if available, fallback to AniList ID
 
     if (sourceType === "sub") {
       switch (activeServer) {
@@ -177,11 +184,13 @@ export default function Watch() {
         case "HD-4":
           return `https://vidnest.fun/animepahe/${aniId}/${ep}/sub`;
         case "HD-5":
-          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub`; //https://api.cinetaro.buzz/anime/anilist/154587/1/1/sub
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub`;
+        case "HD-6":
+          return `https://api.cinetaro.buzz/anime/tmdb/${tmdb}/${ep}/sub`;
         default:
           return "";
 
-          
+
       }
     } else if (sourceType === "dub") {
       switch (activeServer) {
@@ -192,7 +201,9 @@ export default function Watch() {
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/dub`;
         case "HD-4":
-          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub`; //https://api.cinetaro.buzz/anime/anilist/154587
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub`;
+        case "HD-5":
+          return `https://api.cinetaro.buzz/anime/tmdb/${tmdb}/${ep}/dub`;
         default:
           return "";
 
@@ -204,7 +215,14 @@ export default function Watch() {
         case "HD-2":
           return `https://vidnest.fun/anime/${aniId}/${ep}/hindi`;
         case "HD-3":
-          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/hindi`; //https://api.cinetaro.buzz/anime/anilist/154587/1/1/hindi
+          return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/hindi`;
+        case "HD-4":
+          // Check if it's a movie format
+          if (anime?.format === "MOVIE") {
+            return `https://vid.techneo.fun/tmdb/movies/${tmdb}`;
+          } else {
+            return `https://vid.techneo.fun/tmdb/tv/${tmdb}/${ep}/1`;
+          }
         default:
           return "";
       }
@@ -455,7 +473,7 @@ export default function Watch() {
               <>
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">SUB:</span>
-                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5", "HD-6"].filter(s => s !== "HD-6" || tmdbId).map((s) => (
                     <button
                       key={s}
                       onClick={() => {
@@ -475,7 +493,7 @@ export default function Watch() {
 
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">DUB:</span>
-                  {["HD-1", "HD-2", "HD-3","HD-4"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5"].filter(s => s !== "HD-5" || tmdbId).map((s) => (
                     <button
                       key={`${s}-dub`}
                       onClick={() => {
@@ -495,7 +513,7 @@ export default function Watch() {
 
                 <div className="flex flex-wrap gap-3 items-center">
                   <span className="font-semibold">HINDI:</span>
-                  {["HD-1", "HD-2", "HD-3"].map((s) => (
+                  {["HD-1", "HD-2", "HD-3", "HD-4"].filter(s => s !== "HD-4" || tmdbId).map((s) => (
                     <button
                       key={`${s}-hindi`}
                       onClick={() => {
