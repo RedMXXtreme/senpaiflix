@@ -3,6 +3,8 @@
  * @module anilistApi
  */
 
+import axios from 'axios';
+
 const ANILIST_URL = 'https://graphql.anilist.co';
 
 // Configuration constants
@@ -1156,6 +1158,52 @@ export const fetchRandomMedia = async () => {
   };
 };
 
+/**
+ * Fetch a random anime
+ * @returns {Promise<Object>} Random anime data
+ */
+export const fetchRandomAnime = async () => {
+  for (let attempt = 0; attempt < CONFIG.RANDOM_MAX_ATTEMPTS; attempt++) {
+    const randomId = Math.floor(Math.random() * CONFIG.RANDOM_ID_MAX) + 1;
+
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          type
+          title {
+            romaji
+            english
+          }
+        }
+      }
+    `;
+
+    try {
+      const data = await sendAniListQuery(query, { id: randomId });
+
+      if (data?.Media?.id) {
+        logger.info(`Random anime found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id})`);
+        return data.Media;
+      }
+    } catch (error) {
+      // Continue to next attempt
+      continue;
+    }
+  }
+
+  // Fallback
+  logger.warn('Could not find random anime after multiple attempts, using fallback');
+  return {
+    id: 16498, // Attack on Titan
+    type: 'ANIME',
+    title: {
+      romaji: 'Shingeki no Kyojin',
+      english: 'Attack on Titan'
+    }
+  };
+};
+
 // Export error classes for external use
 export { AniListError, RateLimitError, NetworkError, ValidationError };
 
@@ -1165,20 +1213,74 @@ export { AniListError, RateLimitError, NetworkError, ValidationError };
  * @returns {Promise<Object>} Anime info with episodes
  */
 export const fetchAnimeInfoFromSteller = async (id) => {
-  const validatedId = validateId(id);
-
   try {
-    const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/info/${validatedId}`);
+    // Primary source: Steller API
+    const response = await axios.get(`https://steller-tau.vercel.app/meta/anilist/info/${id}`);
+    const data = response.data;
 
-    if (!response.ok) {
-      throw new AniListError(`Steller API error: ${response.status}`, response.status);
+    // ✅ If Steller returns valid episodes
+    if (data && data.episodes && data.episodes.length > 0) {
+      return data;
     }
 
-    const data = await response.json();
-    return data;
+    // 🚨 Fallback if no episodes found
+    console.warn("No episodes from Steller, switching to AniList...");
+    return await fetchAnimeInfoFromAniList(id);
+
   } catch (error) {
-    if (error instanceof AniListError) throw error;
-    logger.error('Error fetching from Steller API:', error);
-    throw new NetworkError(`Failed to fetch from Steller: ${error?.message || error}`, error);
+    console.error("Steller API failed:", error);
+    // 🚨 Fallback on network or other errors
+    return await fetchAnimeInfoFromAniList(id);
   }
 };
+
+/**
+ * Fetch anime info from AniList API
+ * @param {number|string} id - Anime ID
+ * @returns {Promise<Object>} Anime info with all episodes
+ */
+export const fetchAnimeInfoFromAniList = async (id) => {
+  try {
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          title { romaji english native }
+          episodes
+          coverImage { large }
+          description
+        }
+      }
+    `;
+
+    const response = await axios.post("https://graphql.anilist.co", {
+      query,
+      variables: { id: Number(id) },
+    });
+
+    const media = response.data.data.Media;
+
+    // Generate all episodes based on total episode count
+    const totalEpisodes = media.episodes || 0;
+    const episodes = Array.from({ length: totalEpisodes }, (_, i) => ({
+      number: i + 1,
+      title: `Episode ${i + 1}`,
+      url: null, // No URL from AniList
+    }));
+
+    // Convert AniList structure to match expected shape
+    const mappedData = {
+      id: media.id,
+      title: media.title,
+      coverImage: media.coverImage,
+      description: media.description,
+      episodes,
+    };
+
+    return mappedData;
+  } catch (err) {
+    console.error("AniList API failed:", err);
+    return null;
+  }
+};
+

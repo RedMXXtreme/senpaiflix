@@ -309,145 +309,31 @@ export default function Watch() {
   <span className="text-white font-semibold">Episode {episode}</span>
 </div>
 
-      <div className="relative flex flex-col md:flex-row gap-6 max-w-[1400px] mx-auto p-4 z-10">
-        {/* --- Left Sidebar (Episodes) --- */}
-        <div className="w-full md:w-[20%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
-          <h2 className="text-lg font-semibold mb-3">Episodes</h2>
-          
-          {/* Pagination Controls - Top */}
-          {totalPages > 1 && releasedEpisodes.length > 0 && (
-            <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/10">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-400">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-              >
-                Next
-              </button>
+      {/* Player at the top */}
+      <div className="relative max-w-[1400px] mx-auto p-4 z-10 mb-6">
+        <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-white/10">
+          {isIframeLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader />
+            </div>
+          ) : getIframeUrl() ? (
+            <iframe
+              src={getIframeUrl()}
+              allowFullScreen
+              className="w-full h-full"
+              title="Anime Player"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-white text-lg font-semibold">
+              Stream not available
             </div>
           )}
-
-          <input
-            type="text"
-            placeholder="Find episode"
-            className="w-full mb-3 px-3 py-2 rounded-md bg-[#1e1e1e] text-sm outline-none focus:ring-1 focus:ring-pink-500"
-            onChange={(e) => {
-              const searchTerm = e.target.value.toLowerCase();
-              if (searchTerm) {
-                const foundIndex = stellerEpisodes.findIndex(ep =>
-                  ep.title?.toLowerCase().includes(searchTerm) ||
-                  ep.id?.toString().includes(searchTerm)
-                );
-                if (foundIndex !== -1) {
-                  setEpisode(foundIndex + 1);
-                }
-              }
-            }}
-          />
-          <div className="max-h-[500px] overflow-y-auto pr-1 custom-scroll">
-            {isEpisodesLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="h-10 bg-gray-700 rounded-lg animate-pulse"></div>
-                ))}
-              </div>
-            ) : releasedEpisodes.length > 0 ? (
-              <>
-                {currentEpisodes.map((ep) => {
-                  // Find episode by index (ep-1 since episodes are 1-indexed but array is 0-indexed)
-                  const stellerEpisode = stellerEpisodes[ep - 1];
-
-                  return (
-                    <button
-                      key={ep}
-                      onClick={() => setEpisode(ep)}
-                      className={`w-full text-left px-3 py-2 mb-2 rounded-lg font-medium transition-all flex items-center gap-3 ${
-                        episode === ep
-                          ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.6)]"
-                          : "bg-[#1e1e1e] hover:bg-[#2a2a2a]"
-                      }`}
-                    >
-                      {stellerEpisode && stellerEpisode.image && (
-                        <img
-                          src={stellerEpisode.image}
-                          alt={`Episode ${ep}`}
-                          className="w-12 h-8 object-cover rounded"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span>Episode {ep}</span>
-                        {stellerEpisode && stellerEpisode.title && (
-                          <span className="text-xs text-gray-400 truncate">
-                            {stellerEpisode.title}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {/* Pagination Controls - Bottom */}
-                {totalPages > 1 && (
-                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/10">
-                    <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-                    >
-                      Previous
-                    </button>
-                    <span className="text-sm text-gray-400">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-gray-400 text-sm">No episodes released yet.</p>
-            )}
-          </div>
         </div>
+      </div>
 
-        {/* --- Middle Section (Player + Controls) --- */}
+      <div className="relative flex flex-col md:flex-row gap-6 max-w-[1400px] mx-auto p-4 z-10">
+        {/* --- Middle Section (Controls + Episodes) --- */}
         <div className="flex-1">
-          {/* Player */}
-          <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(236,72,153,0.3)] border border-white/10">
-            {isIframeLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader />
-              </div>
-            ) : getIframeUrl() ? (
-              <iframe
-                src={getIframeUrl()}
-                allowFullScreen
-                className="w-full h-full"
-                title="Anime Player"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-white text-lg font-semibold">
-                Stream not available
-              </div>
-            )}
-          </div>
 
           {/* Episode Info */}
           <div className="mt-4 bg-[#c7365f] text-center p-3 rounded-lg shadow-[0_0_10px_rgba(236,72,153,0.5)]">
@@ -562,6 +448,123 @@ export default function Watch() {
           {/* ✅ Countdown Component */}
           <div className="mt-6">
             <Countdowm title={anime.title.romaji} />
+          </div>
+
+          {/* --- Episodes Section --- */}
+          <div className="mt-6 bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+            <h2 className="text-lg font-semibold mb-3">Episodes</h2>
+
+            {/* Pagination Controls - Top */}
+            {totalPages > 1 && releasedEpisodes.length > 0 && (
+              <div className="flex justify-between items-center mb-3 pb-3 border-b border-white/10">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            <input
+              type="text"
+              placeholder="Find episode"
+              className="w-full mb-3 px-3 py-2 rounded-md bg-[#1e1e1e] text-sm outline-none focus:ring-1 focus:ring-pink-500"
+              onChange={(e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                if (searchTerm) {
+                  const foundIndex = stellerEpisodes.findIndex(ep =>
+                    ep.title?.toLowerCase().includes(searchTerm) ||
+                    ep.id?.toString().includes(searchTerm)
+                  );
+                  if (foundIndex !== -1) {
+                    setEpisode(foundIndex + 1);
+                  }
+                }
+              }}
+            />
+            <div className="max-h-[500px] overflow-y-auto pr-1 custom-scroll">
+              {isEpisodesLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="h-10 bg-gray-700 rounded-lg animate-pulse"></div>
+                  ))}
+                </div>
+              ) : releasedEpisodes.length > 0 ? (
+                <>
+                  {currentEpisodes.map((ep) => {
+                    // Find episode by index (ep-1 since episodes are 1-indexed but array is 0-indexed)
+                    const stellerEpisode = stellerEpisodes[ep - 1];
+
+                    return (
+                      <button
+                        key={ep}
+                        onClick={() => setEpisode(ep)}
+                        className={`w-full text-left px-3 py-2 mb-2 rounded-lg font-medium transition-all flex items-center gap-3 ${
+                          episode === ep
+                            ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.6)]"
+                            : "bg-[#1e1e1e] hover:bg-[#2a2a2a]"
+                        }`}
+                      >
+                        {stellerEpisode && stellerEpisode.image && (
+                          <img
+                            src={stellerEpisode.image}
+                            alt={`Episode ${ep}`}
+                            className="w-12 h-8 object-cover rounded"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span>Episode {ep}</span>
+                          {stellerEpisode && stellerEpisode.title && (
+                            <span className="text-xs text-gray-400 truncate">
+                              {stellerEpisode.title}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {/* Pagination Controls - Bottom */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/10">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-400">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-400 text-sm">No episodes released yet.</p>
+              )}
+            </div>
           </div>
         </div>
         {/* --- Right Sidebar (Anime Info) --- */}

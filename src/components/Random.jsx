@@ -8,18 +8,19 @@ const Random = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getRandomAnime = async () => {
+    const getRandomMedia = async () => {
       try {
         setLoading(true);
-        const randomAnime = await fetchRandomAnime();
-        if (randomAnime && randomAnime.id) {
-          navigate(`/anime/${randomAnime.id}`);
+        const randomMedia = await fetchRandomAnime();
+        if (randomMedia && randomMedia.id) {
+          const mediaType = randomMedia.type?.toLowerCase() || 'anime';
+          navigate(`/${mediaType}/${randomMedia.id}`);
         } else {
           // Fallback if the API response is not as expected
           navigate('/anime/21'); // One Piece as fallback
         }
       } catch (error) {
-        console.error('Error fetching random anime:', error);
+        console.error('Error fetching random media:', error);
         // Fallback on any error
         navigate('/anime/21'); // One Piece as fallback
       } finally {
@@ -27,7 +28,7 @@ const Random = () => {
       }
     };
 
-    getRandomAnime();
+    getRandomMedia();
   }, [navigate]);
 
   if (!loading) {
@@ -39,7 +40,7 @@ const Random = () => {
       <div className="text-center">
         <Loader />
         <p className="text-white text-xl mt-6 animate-pulse">
-          Finding a random anime for you...
+          Finding a random media for you...
         </p>
         <p className="text-gray-400 text-sm mt-2">
           This will only take a moment
