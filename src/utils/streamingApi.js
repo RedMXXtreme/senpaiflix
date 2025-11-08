@@ -111,3 +111,14 @@ export async function fetchTMDBId(query) {
     return null;
   }
 }
+
+export async function fetchAnimeSeasonFromZorime(animeId) {
+  try {
+    const url = `https://zorime-api.vercel.app/api/info?id=${encodeURIComponent(animeId)}`;
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch season info from Zorime API:", error);
+    return null;
+  }
+}

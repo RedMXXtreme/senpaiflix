@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Countdowm from "../components/countdown.jsx";
+import SeasonsSection from "../components/SeasonsSection.jsx";
 import Loader from "../components/Loader.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchAnimeInfoFromSteller } from "../utils/anilistApi";
 import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai, fetchTMDBId } from "../utils/streamingApi";
@@ -21,6 +22,7 @@ export default function Watch() {
   const [stellerEpisodes, setStellerEpisodes] = useState([]);
   const [isEpisodesLoading, setIsEpisodesLoading] = useState(true);
   const [relations, setRelations] = useState([]);
+  const [seasons, setSeasons] = useState([]);
   const episodesPerPage = 100;
 
   // Calculate pagination
@@ -66,6 +68,26 @@ export default function Watch() {
           setRelations(stellerData.relations);
         }
 
+        // Fetch seasons from Zorime API
+        if (stellerData && stellerData.episodes && stellerData.episodes.length > 0) {
+          const firstEpisodeId = stellerData.episodes[0].id;
+          if (firstEpisodeId && firstEpisodeId.includes('$episode$')) {
+            const animeId = firstEpisodeId.split('$episode$')[0];
+            try {
+              const seasonsResponse = await fetch(`https://zorime-api.vercel.app/api/info?id=${animeId}`);
+              if (seasonsResponse.ok) {
+                const seasonsData = await seasonsResponse.json();
+                setSeasons(seasonsData.results?.seasons || []);
+                console.log(`Fetched seasons from Zorime API:`, seasonsData.results?.seasons);
+              } else {
+                console.error("Failed to fetch seasons from Zorime API:", seasonsResponse.status);
+              }
+            } catch (error) {
+              console.error("Error fetching seasons from Zorime API:", error);
+            }
+          }
+        }
+
         // Get episodes from Steller API only
         let allEpisodes = [];
 
@@ -96,6 +118,8 @@ export default function Watch() {
   const slugify = (str = "") =>
     str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
+  const slug = slugify(anime?.title?.romaji || anime?.title?.english || "");
+
   // Check if anime is hentai
   const isHentai = anime?.genres?.includes("Hentai");
 
@@ -113,7 +137,6 @@ export default function Watch() {
       const fetchUrl = async () => {
         setIsIframeLoading(true);
         try {
-          const slug = slugify(anime.title?.romaji || anime.title?.english || "");
           let url;
           if (activeServer === "HD-1") {
             url = await fetchIframeUrlFromHanimeHentai(slug, episode);
@@ -132,14 +155,13 @@ export default function Watch() {
     } else {
       setIframeUrl(null);
     }
-  }, [isHentai, anime, episode, activeServer]);
+  }, [isHentai, anime, episode, activeServer, slug]);
 
   const getIframeUrl = () => {
     if (isHentai) {
       return iframeUrl || "";
     }
 
-    const slug = slugify(anime?.title?.english || anime?.title?.romaji || "");
     const ep = episode;
     const aniId = anime?.id;
     const tmdb = tmdbId || aniId; // Use TMDB ID if available, fallback to AniList ID
@@ -445,6 +467,13 @@ export default function Watch() {
             )}
           </div>
 
+{/* Seasons Section */}
+{seasons.length > 0 && (
+  <SeasonsSection seasons={seasons} />
+)}
+
+
+
           {/* ✅ Countdown Component */}
           <div className="mt-6">
             <Countdowm title={anime.title.romaji} />
@@ -579,7 +608,7 @@ export default function Watch() {
               {anime.title.english || anime.title.romaji}
             </h2>
             <div className="flex flex-wrap gap-2 text-xs mb-3">
-              <span className="bg-gray-800 px-2 py-1 rounded">TV</span>
+              <span className="bg-gray-800 px-2 py-1 rounded">{anime.format || "TV"}</span>
               <span className="bg-gray-800 px-2 py-1 rounded">HD</span>
               <span className="bg-gray-800 px-2 py-1 rounded">
                 {anime.duration} min/ep
@@ -715,4 +744,3 @@ export default function Watch() {
     </div>
   );
 }
-

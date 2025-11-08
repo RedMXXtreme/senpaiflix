@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchRandomAnime } from '../utils/anilistApi';
 import Loader from './Loader';
 
 const Random = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
+    if (hasFetched) return;
+
     const getRandomMedia = async () => {
       try {
         setLoading(true);
-        const randomMedia = await fetchRandomAnime();
+        setHasFetched(true);
+        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/random-anime');
+        if (!response.ok) {
+          throw new Error('Failed to fetch random anime');
+        }
+        const randomMedia = await response.json();
         if (randomMedia && randomMedia.id) {
-          const mediaType = randomMedia.type?.toLowerCase() || 'anime';
-          navigate(`/${mediaType}/${randomMedia.id}`);
+          navigate(`/anime/${randomMedia.id}`, { replace: true });
         } else {
           // Fallback if the API response is not as expected
           navigate('/anime/21'); // One Piece as fallback
@@ -29,7 +35,7 @@ const Random = () => {
     };
 
     getRandomMedia();
-  }, [navigate]);
+  }, [navigate, hasFetched]);
 
   if (!loading) {
     return null;
