@@ -507,6 +507,102 @@ export const fetchRecent = async (page = 1) => {
 };
 
 /**
+ * Fetch trending anime from meta API
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
+export const fetchTrending = async (page = 1) => {
+  const validatedPage = validatePage(page);
+
+  try {
+    const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/trending?page=${validatedPage}&perPage=25`);
+
+    if (!response.ok) {
+      throw new AniListError(`HTTP error! status: ${response.status}`, response.status);
+    }
+
+    const data = await response.json();
+
+    // Transform results to match AniList format
+    const media = (data.results || []).map(item => ({
+      id: parseInt(item.id, 10),
+      title: {
+        romaji: item.title.romaji,
+        english: item.title.english
+      },
+      coverImage: {
+        large: item.image
+      },
+      // Add other fields as needed
+      rating: item.rating,
+      genres: item.genres,
+      status: item.status,
+      type: item.type
+    }));
+
+    // Since total is not provided, estimate totalPages
+    const totalPages = data.hasNextPage ? validatedPage + 1 : validatedPage;
+
+    return {
+      media,
+      totalPages
+    };
+  } catch (error) {
+    if (error instanceof AniListError) throw error;
+    logger.error('Error fetching trending:', error);
+    throw new NetworkError(`Failed to fetch trending: ${error?.message || error}`, error);
+  }
+};
+
+/**
+ * Fetch popular anime from meta API
+ * @param {number} page - Page number (default: 1)
+ * @returns {Promise<Object>} Media list with pagination info
+ */
+export const fetchPopular = async (page = 1) => {
+  const validatedPage = validatePage(page);
+
+  try {
+    const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/popular?page=${validatedPage}&perPage=25`);
+
+    if (!response.ok) {
+      throw new AniListError(`HTTP error! status: ${response.status}`, response.status);
+    }
+
+    const data = await response.json();
+
+    // Transform results to match AniList format
+    const media = (data.results || []).map(item => ({
+      id: parseInt(item.id, 10),
+      title: {
+        romaji: item.title.romaji,
+        english: item.title.english
+      },
+      coverImage: {
+        large: item.image
+      },
+      // Add other fields as needed
+      rating: item.rating,
+      genres: item.genres,
+      status: item.status,
+      type: item.type
+    }));
+
+    // Since total is not provided, estimate totalPages
+    const totalPages = data.hasNextPage ? validatedPage + 1 : validatedPage;
+
+    return {
+      media,
+      totalPages
+    };
+  } catch (error) {
+    if (error instanceof AniListError) throw error;
+    logger.error('Error fetching popular:', error);
+    throw new NetworkError(`Failed to fetch popular: ${error?.message || error}`, error);
+  }
+};
+
+/**
  * Fetch anime with basic filters
  * NOTE: you asked for AND mode for multiple genres. AniList does not provide a direct "genre AND"
  * filter server-side, so we request with genre_in to reduce the candidate set, then post-filter results
@@ -1014,17 +1110,19 @@ export const estimateEpisodes = (format, status) => {
 };
 
 /**
- * Fetch a random anime
- * @returns {Promise<Object>} Random anime data
+ * Fetch a random media (anime or manga)
+ * @returns {Promise<Object>} Random media data
  */
-export const fetchRandomAnime = async () => {
+export const fetchRandomMedia = async () => {
   for (let attempt = 0; attempt < CONFIG.RANDOM_MAX_ATTEMPTS; attempt++) {
     const randomId = Math.floor(Math.random() * CONFIG.RANDOM_ID_MAX) + 1;
+    const randomType = Math.random() < 0.5 ? 'ANIME' : 'MANGA';
 
     const query = `
-      query ($id: Int) {
-        Media(id: $id, type: ANIME) {
+      query ($id: Int, $type: MediaType) {
+        Media(id: $id, type: $type) {
           id
+          type
           title {
             romaji
             english
@@ -1034,10 +1132,10 @@ export const fetchRandomAnime = async () => {
     `;
 
     try {
-      const data = await sendAniListQuery(query, { id: randomId });
+      const data = await sendAniListQuery(query, { id: randomId, type: randomType });
 
       if (data?.Media?.id) {
-        logger.info(`Random anime found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id})`);
+        logger.info(`Random media found: ${data.Media.title?.english || data.Media.title?.romaji} (ID: ${data.Media.id}, Type: ${data.Media.type})`);
         return data.Media;
       }
     } catch (error) {
@@ -1047,9 +1145,10 @@ export const fetchRandomAnime = async () => {
   }
 
   // Fallback
-  logger.warn('Could not find random anime after multiple attempts, using fallback');
+  logger.warn('Could not find random media after multiple attempts, using fallback');
   return {
     id: 16498, // Attack on Titan
+    type: 'ANIME',
     title: {
       romaji: 'Shingeki no Kyojin',
       english: 'Attack on Titan'
@@ -1059,3 +1158,27 @@ export const fetchRandomAnime = async () => {
 
 // Export error classes for external use
 export { AniListError, RateLimitError, NetworkError, ValidationError };
+
+/**
+ * Fetch anime info from Steller API
+ * @param {number|string} id - Anime ID
+ * @returns {Promise<Object>} Anime info with episodes
+ */
+export const fetchAnimeInfoFromSteller = async (id) => {
+  const validatedId = validateId(id);
+
+  try {
+    const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/info/${validatedId}`);
+
+    if (!response.ok) {
+      throw new AniListError(`Steller API error: ${response.status}`, response.status);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof AniListError) throw error;
+    logger.error('Error fetching from Steller API:', error);
+    throw new NetworkError(`Failed to fetch from Steller: ${error?.message || error}`, error);
+  }
+};

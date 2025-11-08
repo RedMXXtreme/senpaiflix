@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import SeasonSection from "../components/SeasonSelector/SeasonSection";
 import Countdowm from "../components/countdown.jsx";
 import Loader from "../components/Loader.jsx";
-import { fetchAnimeWatch, fetchAnimeRecommendations, fetchEpisodesFromJikan, estimateEpisodes } from "../utils/anilistApi";
+import { fetchAnimeWatch, fetchAnimeRecommendations, fetchAnimeInfoFromSteller } from "../utils/anilistApi";
 import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai, fetchTMDBId } from "../utils/streamingApi";
 
 export default function Watch() {
@@ -13,13 +12,15 @@ export default function Watch() {
   const [sourceType, setSourceType] = useState("sub");
   const [activeServer, setActiveServer] = useState("HD-1");
   const [releasedEpisodes, setReleasedEpisodes] = useState([]);
-  const [seasons, setSeasons] = useState([]); // ✅ New: store related seasons
   const [recommendations, setRecommendations] = useState([]);
   const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [iframeUrl, setIframeUrl] = useState(null);
   const [isIframeLoading, setIsIframeLoading] = useState(false);
   const [tmdbId, setTmdbId] = useState(null);
+  const [stellerEpisodes, setStellerEpisodes] = useState([]);
+  const [isEpisodesLoading, setIsEpisodesLoading] = useState(true);
+  const [relations, setRelations] = useState([]);
   const episodesPerPage = 100;
 
   // Calculate pagination
@@ -40,74 +41,44 @@ export default function Watch() {
         const media = await fetchAnimeWatch(id);
         setAnime(media);
 
-        // ✅ Extract and sort seasons from relations
-        const related = media.relations.edges
-          .filter(edge =>
-            ["SEQUEL", "PREQUEL", "ALTERNATIVE"].includes(edge.relationType)
-          )
-          .map(edge => ({
-            id: edge.node.id,
-            title: edge.node.title.english || edge.node.title.romaji,
-            cover: edge.node.coverImage.large,
-            format: edge.node.format,
-            season: edge.node.season,
-            year: edge.node.seasonYear,
-            relation: edge.relationType,
-          }))
-          .sort((a, b) => (a.year || 0) - (b.year || 0));
-
-        // Include current anime as Season 1
-        const allSeasons = [
-          {
-            id: media.id,
-            title: media.title.english || media.title.romaji,
-            cover: media.coverImage.large,
-            format: media.format,
-            season: media.season,
-            year: media.seasonYear,
-            relation: "CURRENT",
-          },
-          ...related,
-        ];
-        setSeasons(allSeasons);
-
-        // Get ALL episodes (not just released ones)
-        let allEpisodes = [];
-
-        // Priority 1: Use total episode count if available
-        if (media.episodes !== null && media.episodes > 0) {
-          allEpisodes = Array.from({ length: media.episodes }, (_, i) => i + 1);
-          console.log(`Showing all ${media.episodes} episodes`);
-        } 
-        // Priority 2: Check airing schedule for episode count
-        else if (media.airingSchedule && media.airingSchedule.nodes && media.airingSchedule.nodes.length > 0) {
-          const maxEpisode = Math.max(...media.airingSchedule.nodes.map(node => node.episode));
-          allEpisodes = Array.from({ length: maxEpisode }, (_, i) => i + 1);
-          console.log(`Found ${maxEpisode} episodes from airing schedule`);
-        } 
-        // Priority 3: Try Jikan API if we have MAL ID
-        else if (media.idMal) {
-          console.log(`Attempting to fetch episodes from Jikan API for MAL ID: ${media.idMal}`);
-          const jikanEpisodes = await fetchEpisodesFromJikan(media.idMal);
-          if (jikanEpisodes && jikanEpisodes.length > 0) {
-            allEpisodes = jikanEpisodes;
-            console.log(`Found ${jikanEpisodes.length} episodes from Jikan API`);
-          }
-        }
-        
-        // Final fallback: estimate based on format and status
-        if (allEpisodes.length === 0) {
-          console.log(`No episode data found, estimating based on format: ${media.format}, status: ${media.status}`);
-          allEpisodes = estimateEpisodes(media.format, media.status);
-          console.log(`Estimated ${allEpisodes.length} episodes`);
-        }
-
-        setReleasedEpisodes(allEpisodes);
 
         // Fetch TMDB ID
         const query = media.title.english || media.title.romaji;
         const tmdb = await fetchTMDBId(query);
         setTmdbId(tmdb);
+
+        // Fetch episodes from Steller API
+        let stellerData = null;
+        try {
+          stellerData = await fetchAnimeInfoFromSteller(id);
+          if (stellerData.episodes && Array.isArray(stellerData.episodes)) {
+            setStellerEpisodes(stellerData.episodes);
+            console.log(`Fetched ${stellerData.episodes.length} episodes from Steller API`);
+          }
+        } catch (error) {
+          console.error("Failed to fetch episodes from Steller API:", error);
+        } finally {
+          setIsEpisodesLoading(false);
+        }
+
+        // Set relations from Steller API
+        if (stellerData && stellerData.relations && Array.isArray(stellerData.relations)) {
+          setRelations(stellerData.relations);
+        }
+
+        // Get episodes from Steller API only
+        let allEpisodes = [];
+
+        if (stellerData && stellerData.episodes && Array.isArray(stellerData.episodes) && stellerData.episodes.length > 0) {
+          allEpisodes = Array.from({ length: stellerData.episodes.length }, (_, i) => i + 1);
+          console.log(`Using ${stellerData.episodes.length} episodes from Steller API episodes array`);
+        } else {
+          // Fallback to 1 episode if no data available
+          allEpisodes = [1];
+          console.log(`No episode data from Steller API, defaulting to 1 episode`);
+        }
+
+        setReleasedEpisodes(allEpisodes);
 
         // Fetch recommendations
         const recs = await fetchAnimeRecommendations(id);
@@ -177,8 +148,6 @@ export default function Watch() {
       switch (activeServer) {
         case "HD-1":
           return `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/sub`;
-        case "HD-2":
-          return `https://player.videasy.net/anime/${aniId}/${ep}?dub=false`;
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/sub`;
         case "HD-4":
@@ -186,24 +155,35 @@ export default function Watch() {
         case "HD-5":
           return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub`;
         case "HD-6":
-          return `https://api.cinetaro.buzz/anime/tmdb/${tmdb}/${ep}/sub`;
+          const episodeIdIni = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://megaplay.buzz/stream/s-4/${episodeIdIni}/sub`;
+        case "HD-2":
+          const episodeIdSub = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://megaplay.buzz/stream/s-2/${episodeIdSub}/sub`;
+        case "MegaPlay":
+          const episodeId = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://vidwish.live/stream/s-2/${episodeId}/sub`;
         default:
           return "";
-
 
       }
     } else if (sourceType === "dub") {
       switch (activeServer) {
         case "HD-1":
           return `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/dub`;
-        case "HD-2":
-          return `https://player.videasy.net/anime/${aniId}/${ep}?dub=true`;
         case "HD-3":
           return `https://vidnest.fun/anime/${aniId}/${ep}/dub`;
         case "HD-4":
           return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub`;
         case "HD-5":
-          return `https://api.cinetaro.buzz/anime/tmdb/${tmdb}/${ep}/dub`;
+          const episodeIdIni = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://megaplay.buzz/stream/s-4/${episodeIdIni}/sub`;
+        case "HD-2":
+          const episodeIdDub = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://megaplay.buzz/stream/s-2/${episodeIdDub}/dub`;
+        case "MegaPlay":
+          const episodeId = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
+          return `https://vidwish.live/stream/s-2/${episodeId}/dub`;
         default:
           return "";
 
@@ -221,7 +201,7 @@ export default function Watch() {
           if (anime?.format === "MOVIE") {
             return `https://vid.techneo.fun/tmdb/movies/${tmdb}`;
           } else {
-            return `https://vid.techneo.fun/tmdb/tv/${tmdb}/${ep}/1`;
+            return `https://vid.techneo.fun/tmdb/tv/${tmdb}/1/${ep}`;
           }
         default:
           return "";
@@ -359,25 +339,65 @@ export default function Watch() {
 
           <input
             type="text"
-            placeholder="Find"
+            placeholder="Find episode"
             className="w-full mb-3 px-3 py-2 rounded-md bg-[#1e1e1e] text-sm outline-none focus:ring-1 focus:ring-pink-500"
+            onChange={(e) => {
+              const searchTerm = e.target.value.toLowerCase();
+              if (searchTerm) {
+                const foundIndex = stellerEpisodes.findIndex(ep =>
+                  ep.title?.toLowerCase().includes(searchTerm) ||
+                  ep.id?.toString().includes(searchTerm)
+                );
+                if (foundIndex !== -1) {
+                  setEpisode(foundIndex + 1);
+                }
+              }
+            }}
           />
           <div className="max-h-[500px] overflow-y-auto pr-1 custom-scroll">
-            {releasedEpisodes.length > 0 ? (
-              <>
-                {currentEpisodes.map((ep) => (
-                  <button
-                    key={ep}
-                    onClick={() => setEpisode(ep)}
-                    className={`w-full text-left px-3 py-2 mb-2 rounded-lg font-medium transition-all ${
-                      episode === ep
-                        ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.6)]"
-                        : "bg-[#1e1e1e] hover:bg-[#2a2a2a]"
-                    }`}
-                  >
-                    Episode {ep}
-                  </button>
+            {isEpisodesLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="h-10 bg-gray-700 rounded-lg animate-pulse"></div>
                 ))}
+              </div>
+            ) : releasedEpisodes.length > 0 ? (
+              <>
+                {currentEpisodes.map((ep) => {
+                  // Find episode by index (ep-1 since episodes are 1-indexed but array is 0-indexed)
+                  const stellerEpisode = stellerEpisodes[ep - 1];
+
+                  return (
+                    <button
+                      key={ep}
+                      onClick={() => setEpisode(ep)}
+                      className={`w-full text-left px-3 py-2 mb-2 rounded-lg font-medium transition-all flex items-center gap-3 ${
+                        episode === ep
+                          ? "bg-pink-600 shadow-[0_0_10px_rgba(236,72,153,0.6)]"
+                          : "bg-[#1e1e1e] hover:bg-[#2a2a2a]"
+                      }`}
+                    >
+                      {stellerEpisode && stellerEpisode.image && (
+                        <img
+                          src={stellerEpisode.image}
+                          alt={`Episode ${ep}`}
+                          className="w-12 h-8 object-cover rounded"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span>Episode {ep}</span>
+                        {stellerEpisode && stellerEpisode.title && (
+                          <span className="text-xs text-gray-400 truncate">
+                            {stellerEpisode.title}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
                 {/* Pagination Controls - Bottom */}
                 {totalPages > 1 && (
                   <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/10">
@@ -432,7 +452,12 @@ export default function Watch() {
           {/* Episode Info */}
           <div className="mt-4 bg-[#c7365f] text-center p-3 rounded-lg shadow-[0_0_10px_rgba(236,72,153,0.5)]">
             <p className="text-sm">
-              You are Watching <strong>Episode {episode}</strong> <br />
+              You are Watching <strong>Episode {episode}</strong>
+              {stellerEpisodes.length > 0 && (() => {
+                const currentStellerEp = stellerEpisodes[episode - 1];
+                return currentStellerEp ? ` - ${currentStellerEp.title}` : '';
+              })()}
+              <br />
               If current server doesn’t work, please try other servers beside.
             </p>
           </div>
@@ -473,7 +498,7 @@ export default function Watch() {
               <>
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">SUB:</span>
-                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5", "HD-6"].filter(s => s !== "HD-6" || tmdbId).map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5", "HD-6", "MegaPlay"].filter(s => (s !== "HD-6" || tmdbId) && (s !== "MegaPlay" || stellerEpisodes.length > 0)).map((s) => (
                     <button
                       key={s}
                       onClick={() => {
@@ -493,7 +518,7 @@ export default function Watch() {
 
                 <div className="flex flex-wrap gap-3 items-center mb-3">
                   <span className="font-semibold">DUB:</span>
-                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5"].filter(s => s !== "HD-5" || tmdbId).map((s) => (
+                  {["HD-1", "HD-2", "HD-3","HD-4", "HD-5", "MegaPlay"].filter(s => (s !== "HD-5" || tmdbId) && (s !== "MegaPlay" || stellerEpisodes.length > 0)).map((s) => (
                     <button
                       key={`${s}-dub`}
                       onClick={() => {
@@ -533,117 +558,158 @@ export default function Watch() {
               </>
             )}
           </div>
-          {/* ✅ Seasons Section */}
-          <div className="mt-6">
-            <SeasonSection animeId={anime.id} />
-          </div>
+
           {/* ✅ Countdown Component */}
           <div className="mt-6">
             <Countdowm title={anime.title.romaji} />
           </div>
         </div>
         {/* --- Right Sidebar (Anime Info) --- */}
-        <div className="w-full md:w-[25%] bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
-          <img
-            src={anime.coverImage.large}
-            alt={anime.title.romaji}
-            className="rounded-xl mb-4"
-          />
-          <h2 className="text-lg font-semibold mb-2">
-            {anime.title.english || anime.title.romaji}
-          </h2>
-          <div className="flex flex-wrap gap-2 text-xs mb-3">
-            <span className="bg-gray-800 px-2 py-1 rounded">TV</span>
-            <span className="bg-gray-800 px-2 py-1 rounded">HD</span>
-            <span className="bg-gray-800 px-2 py-1 rounded">
-              {anime.duration} min/ep
-            </span>
-          </div>
-          <p className="text-sm text-gray-300 mb-4 line-clamp-6">
-            {anime.description?.replace(/<[^>]+>/g, "")}
-          </p>
-          <Link
-            to={`/anime/${anime.id}`}
-            className="block text-center bg-pink-600 hover:bg-pink-700 transition px-4 py-2 rounded-lg font-semibold mb-4 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
-          >
-            View Details
-          </Link>
-
-          <div className="text-center mt-4">
-            <p className="text-2xl font-bold">
-              {(anime.averageScore / 10).toFixed(1)}
+        <div className="w-full md:w-[25%] space-y-4">
+          <div className="bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10 h-fit">
+            <img
+              src={anime.coverImage.large}
+              alt={anime.title.romaji}
+              className="rounded-xl mb-4"
+            />
+            <h2 className="text-lg font-semibold mb-2">
+              {anime.title.english || anime.title.romaji}
+            </h2>
+            <div className="flex flex-wrap gap-2 text-xs mb-3">
+              <span className="bg-gray-800 px-2 py-1 rounded">TV</span>
+              <span className="bg-gray-800 px-2 py-1 rounded">HD</span>
+              <span className="bg-gray-800 px-2 py-1 rounded">
+                {anime.duration} min/ep
+              </span>
+            </div>
+            <p className="text-sm text-gray-300 mb-4 line-clamp-6">
+              {anime.description?.replace(/<[^>]+>/g, "")}
             </p>
-            <p className="text-sm text-gray-400">Vote now</p>
+            <Link
+              to={`/anime/${anime.id}`}
+              className="block text-center bg-pink-600 hover:bg-pink-700 transition px-4 py-2 rounded-lg font-semibold mb-4 shadow-[0_0_10px_rgba(236,72,153,0.7)]"
+            >
+              View Details
+            </Link>
+
+            <div className="text-center mt-4">
+              <p className="text-2xl font-bold">
+                {(anime.averageScore / 10).toFixed(1)}
+              </p>
+              <p className="text-sm text-gray-400">Vote now</p>
+            </div>
           </div>
+
+          {/* Relations Section */}
+          {relations.length > 0 && (
+            <div className="bg-[#131313]/90 backdrop-blur-md rounded-2xl p-4 shadow-[0_0_15px_rgba(255,255,255,0.05)] border border-white/10">
+              <h3 className="text-lg font-semibold mb-4">Related Anime</h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto custom-scroll">
+                {relations.map((relation) => (
+                  <Link
+                    key={relation.id}
+                    to={`/anime/${relation.id}`}
+                    className="block bg-[#1a1a1a] hover:bg-[#222] rounded-lg p-3 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={relation.image}
+                        alt={relation.title.english || relation.title.romaji}
+                        className="w-10 h-14 object-cover rounded"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">
+                          {relation.title.english || relation.title.romaji}
+                        </h4>
+                        <p className="text-xs text-gray-400 capitalize">
+                          {relation.relationType.toLowerCase().replace('_', ' ')}
+                        </p>
+                        {relation.type && (
+                          <span className="inline-block bg-gray-800 px-2 py-0.5 rounded text-xs mt-1">
+                            {relation.type}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-{/* --- Recommendations Section --- */}
-{(recommendations.length > 0 || isRecommendationsLoading) && (
-  <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 py-8 mt-10 
-                  bg-[#141414]/80 backdrop-blur-lg rounded-2xl 
-                  border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-    <h2 className="text-xl sm:text-2xl font-bold mb-6 text-white tracking-wide flex items-center gap-2">
-      <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
-      Recommendations
-    </h2>
 
-    {/* Responsive grid setup */}
-    <div
-      className="
-        grid gap-4 sm:gap-5 md:gap-6
-        grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8
-      "
-    >
-      {isRecommendationsLoading ? (
-        Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-xl bg-[#1c1c1c]">
-            <div className="relative">
-              <div className="w-full h-48 sm:h-56 md:h-60 lg:h-64 bg-gray-700 rounded-xl animate-pulse"></div>
-              <div className="absolute bottom-2 left-2 right-2 text-center text-xs sm:text-sm md:text-base font-semibold text-white leading-tight">
-                <div className="h-4 bg-gray-600 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        ))
-      ) : (
-        recommendations.map((rec) => (
-          <Link
-            key={rec.id}
-            to={`/anime/${rec.id}`}
+      {/* --- Recommendations Section --- */}
+      {(recommendations.length > 0 || isRecommendationsLoading) && (
+        <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 py-8 mt-10
+                        bg-[#141414]/80 backdrop-blur-lg rounded-2xl
+                        border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-white tracking-wide flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
+            Recommendations
+          </h2>
+
+          {/* Responsive grid setup */}
+          <div
             className="
-              group relative overflow-hidden rounded-xl
-              bg-[#1c1c1c] transition-all duration-300
-              hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]
+              grid gap-4 sm:gap-5 md:gap-6
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8
             "
           >
-            <div className="relative">
-              <img
-                src={rec.cover}
-                alt={rec.title}
-                className="
-                  w-full h-48 sm:h-56 md:h-60 lg:h-64
-                  object-cover rounded-xl
-                  transition-transform duration-500 group-hover:scale-110
-                "
-              />
-              <div className="absolute inset-0 bg-gradient-to-t
-                              from-black/80 via-black/20 to-transparent
-                              opacity-0 group-hover:opacity-100
-                              transition-opacity duration-500"></div>
-              <div className="absolute bottom-2 left-2 right-2
-                              text-center text-xs sm:text-sm md:text-base
-                              font-semibold text-white leading-tight">
-                {rec.title ? (rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title) : "Unknown Title"}
-              </div>
-            </div>
-          </Link>
-        ))
+            {isRecommendationsLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="group relative overflow-hidden rounded-xl bg-[#1c1c1c]">
+                  <div className="relative">
+                    <div className="w-full h-48 sm:h-56 md:h-60 lg:h-64 bg-gray-700 rounded-xl animate-pulse"></div>
+                    <div className="absolute bottom-2 left-2 right-2 text-center text-xs sm:text-sm md:text-base font-semibold text-white leading-tight">
+                      <div className="h-4 bg-gray-600 rounded animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              recommendations.map((rec) => (
+                <Link
+                  key={rec.id}
+                  to={`/anime/${rec.id}`}
+                  className="
+                    group relative overflow-hidden rounded-xl
+                    bg-[#1c1c1c] transition-all duration-300
+                    hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(255,255,255,0.15)]
+                  "
+                >
+                  <div className="relative">
+                    <img
+                      src={rec.cover}
+                      alt={rec.title}
+                      className="
+                        w-full h-48 sm:h-56 md:h-60 lg:h-64
+                        object-cover rounded-xl
+                        transition-transform duration-500 group-hover:scale-110
+                      "
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t
+                                    from-black/80 via-black/20 to-transparent
+                                    opacity-0 group-hover:opacity-100
+                                    transition-opacity duration-500"></div>
+                    <div className="absolute bottom-2 left-2 right-2
+                                    text-center text-xs sm:text-sm md:text-base
+                                    font-semibold text-white leading-tight">
+                      {rec.title ? (rec.title.length > 40 ? rec.title.slice(0, 40) + "..." : rec.title) : "Unknown Title"}
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
       )}
-    </div>
-  </div>
-)}
 
 
     </div>
   );
 }
+
