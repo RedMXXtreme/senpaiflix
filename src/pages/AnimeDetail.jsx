@@ -1,93 +1,38 @@
+// AnimeDetail.jsx
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { fetchAnimeDetail } from '../utils/anilistApi';
 import {
   FaPlay,
-  FaMicrophone,
+  FaPlus,
   FaShareAlt,
   FaTelegramPlane,
   FaTwitter,
   FaFacebookF,
   FaRedditAlien,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 
 const Genre = ({ genre }) => (
-  <span className="bg-gray-700 text-white px-3 py-1 rounded-full text-xs">
+  <span className="bg-gray-800 text-gray-200 px-3 py-1 rounded-full text-xs font-semibold">
     {genre}
   </span>
 );
 
-const SkeletonAnimeDetail = () => (
-  <div className="relative min-h-screen text-white bg-gray-900">
-    <div
-      className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-30"
-      style={{ backgroundImage: `url(https://via.placeholder.com/1920x1080/333333/333333)` }}
-      aria-hidden="true"
-    ></div>
-
-    <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-      {/* Left Skeleton */}
-      <div className="flex-shrink-0 w-full md:w-64 flex flex-col items-center gap-4">
-        <div className="rounded-xl shadow-lg w-full h-96 bg-gray-700 animate-pulse"></div>
-        <div className="bg-black text-pink-400 w-full text-center py-2 rounded-b-xl font-semibold text-sm mt-2">
-          <div className="h-4 bg-gray-700 rounded animate-pulse"></div>
+const Skeleton = () => (
+  <div className="min-h-screen bg-gray-900 text-white">
+    <div className="h-56 bg-gray-800 animate-pulse" />
+    <div className="max-w-6xl mx-auto px-4 -mt-20 relative">
+      <div className="flex gap-8">
+        <div className="w-48 h-72 bg-gray-800 rounded-xl shadow-lg animate-pulse" />
+        <div className="flex-1 space-y-4">
+          <div className="h-6 bg-gray-800 rounded w-1/3 animate-pulse" />
+          <div className="h-10 bg-gray-800 rounded w-1/2 animate-pulse" />
+          <div className="h-6 bg-gray-800 rounded w-1/4 animate-pulse" />
+          <div className="h-4 bg-gray-800 rounded w-full animate-pulse" />
+          <div className="h-4 bg-gray-800 rounded w-5/6 animate-pulse" />
         </div>
-        <div className="flex gap-4 w-full">
-          <div className="bg-gray-700 rounded-full px-6 py-2 w-full h-10 animate-pulse"></div>
-          <div className="bg-gray-700 rounded-full px-6 py-2 w-full h-10 animate-pulse"></div>
-        </div>
-      </div>
-
-      {/* Center Skeleton */}
-      <div className="flex-1 flex flex-col gap-4">
-        <div className="h-4 bg-gray-700 rounded w-1/2 animate-pulse"></div>
-        <div className="h-8 bg-gray-700 rounded w-3/4 animate-pulse"></div>
-        <div className="flex gap-2">
-          <div className="h-6 bg-gray-700 rounded w-16 animate-pulse"></div>
-          <div className="h-6 bg-gray-700 rounded w-12 animate-pulse"></div>
-          <div className="h-6 bg-gray-700 rounded w-20 animate-pulse"></div>
-        </div>
-        <div className="h-4 bg-gray-700 rounded w-full animate-pulse"></div>
-        <div className="h-4 bg-gray-700 rounded w-5/6 animate-pulse"></div>
-        <div className="h-4 bg-gray-700 rounded w-4/5 animate-pulse"></div>
-        {/* Share Skeleton */}
-        <div className="flex items-center gap-4 mt-8">
-          <div className="w-12 h-12 bg-gray-700 rounded-full animate-pulse"></div>
-          <div>
-            <div className="h-4 bg-gray-700 rounded w-20 animate-pulse"></div>
-            <div className="h-3 bg-gray-700 rounded w-16 animate-pulse"></div>
-          </div>
-          <div className="ml-auto flex gap-2">
-            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-700 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Skeleton */}
-      <div className="w-72 flex-shrink-0 bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-xl p-6 text-sm space-y-3 border border-gray-700">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex justify-between">
-            <div className="h-4 bg-gray-700 rounded w-20 animate-pulse"></div>
-            <div className="h-4 bg-gray-700 rounded w-24 animate-pulse"></div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* Trailers Skeleton */}
-    <div className="mt-8 px-4">
-      <div className="h-6 bg-gray-700 rounded w-32 animate-pulse mb-4"></div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="relative rounded-lg overflow-hidden shadow-lg bg-gray-700 animate-pulse" style={{ aspectRatio: "16/9" }}>
-            <div className="absolute bottom-2 left-2 h-4 w-12 bg-black bg-opacity-60 rounded animate-pulse"></div>
-          </div>
-        ))}
       </div>
     </div>
   </div>
@@ -97,307 +42,284 @@ const AnimeDetail = () => {
   const { id } = useParams();
   const [anime, setAnime] = useState(null);
   const [descExpanded, setDescExpanded] = useState(false);
-  const [promoVideoUrl, setPromoVideoUrl] = useState(null);
   const [promoVideos, setPromoVideos] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [promoUrl, setPromoUrl] = useState(null);
 
   useEffect(() => {
-    setAnime(null); // Reset anime data when id changes
+    setAnime(null);
+    setPromoVideos([]);
+    setIsModalOpen(false);
+    setPromoUrl(null);
+
     const fetchAnime = async () => {
       try {
-        const data = await fetchAnimeDetail(id);
+        const res = await axios.get(`https://steller-tau.vercel.app/meta/anilist/info/${id}`);
+        const d = res.data;
+
         const animeData = {
-          title: data.title.english || data.title.romaji,
-          romaji: data.title.romaji,
-          japaneseTitle: data.title.native,
-          synonyms: [],
-          description: data.description,
-          coverImage: data.coverImage.extraLarge,
-          bannerImage: data.bannerImage || data.coverImage.extraLarge,
-          genres: data.genres,
-          episodes: data.episodes,
-          status: data.status,
-          aired: data.season && data.seasonYear ? `${data.season} ${data.seasonYear}` : "Unknown",
-          premiered: data.season && data.seasonYear ? `${data.season.charAt(0).toUpperCase() + data.season.slice(1)} ${data.seasonYear}` : "Unknown",
-          duration: data.duration ? `${data.duration} min/ep` : "Unknown",
-          malScore: data.averageScore ? `${data.averageScore}%` : "N/A",
-          studios: data.studios?.nodes[0]?.name || "Unknown",
-          producers: "Unknown",
-          rating: "PG-13",
-          type: "TV",
-          idMal: data.idMal,
-          trailer: data.trailer,
+          id: d.id,
+          title: d.title?.english || d.title?.romaji || "Unknown Title",
+          romaji: d.title?.romaji || d.title?.english,
+          japaneseTitle: d.title?.native || d.title?.romaji,
+          synonyms: d.synonyms || [],
+          description: d.description || "No description available.",
+          coverImage: d.image || "",
+          bannerImage: d.cover || d.image || "",
+          genres: d.genres || [],
+          totalEpisodes: d.totalEpisodes || d.episodes || null,
+          status: d.status || "Unknown",
+          startDate: d.startDate || null,
+          endDate: d.endDate || null,
+          releaseDate: d.releaseDate || null,
+          duration: d.duration ? `${d.duration} min/ep` : d.duration || "Unknown",
+          ratingPercentage: d.rating ? `${d.rating}%` : d.rating || "N/A",
+          popularity: d.popularity || 0,
+          studios: d.studios || [],
+          type: d.type || "TV",
+          season: d.season || null,
+          trailer: d.trailer || null,
+          recommendations: d.recommendations || [],
         };
+
         setAnime(animeData);
+
+        // set promoVideos from trailer ONLY (no MAL/Jikan)
+        if (d.trailer && d.trailer.id) {
+          const video = {
+            trailer: {
+              embed_url: `https://www.youtube.com/embed/${d.trailer.id}`,
+              images: { maximum_image_url: d.trailer.thumbnail || `https://img.youtube.com/vi/${d.trailer.id}/maxresdefault.jpg` },
+            },
+          };
+          setPromoVideos([video]);
+        } else {
+          setPromoVideos([]);
+        }
       } catch (err) {
-        console.error("AniList fetch error:", err);
+        console.error("Error fetching anime (steller-tau):", err);
       }
     };
 
     fetchAnime();
   }, [id]);
 
-  useEffect(() => {
-    if (anime && anime.idMal) {
-      fetchPromoVideos(anime.idMal);
-    }
-  }, [anime]);
+  if (!anime) return <Skeleton />;
 
-  const fetchPromoVideos = async (malId) => {
-    try {
-      const response = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/videos`);
-      const promoVideos = response.data.data.promo;
-      if (promoVideos && promoVideos.length > 0) {
-        setPromoVideos(promoVideos);
-      } else if (anime.trailer && anime.trailer.site === "youtube") {
-        // Fallback to AniList trailer if no promo videos
-        const videoId = anime.trailer.id;
-        const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-        setPromoVideos([{
-          trailer: {
-            embed_url: `https://www.youtube.com/embed/${videoId}`,
-            images: { maximum_image_url: thumbnailUrl }
-          }
-        }]);
-      } else {
-        console.log("No promo videos available.");
-      }
-    } catch (error) {
-      console.error("Error fetching promo videos:", error);
-    }
-  };
-
- 
-  if (!anime) return <SkeletonAnimeDetail />;
-
-  const badges = [
-    { label: anime.rating, bgColor: "bg-white text-black" },
-    { label: anime.type, bgColor: "bg-pink-400 text-white" },
-    { label: anime.status, bgColor: "bg-green-400 text-black" },
-    {
-      label: anime.episodes
-        ? `${anime.episodes} Episodes`
-        : "Unknown Episodes",
-      bgColor: "bg-blue-300 text-black",
-      icon: <FaMicrophone className="ml-1" />,
-    },
-  ];
-
-  const truncatedDescription =
-    anime.description && anime.description.length > 300 && !descExpanded
-      ? anime.description.slice(0, 300) + "..."
-      : anime.description;
+  const truncated = anime.description && anime.description.length > 350 && !descExpanded
+    ? anime.description.replace(/<[^>]+>/g, "").slice(0, 350) + "..."
+    : anime.description.replace(/<[^>]+>/g, "");
 
   return (
-    <div className="relative min-h-screen text-white bg-gray-900">
+    <div className="min-h-screen bg-gray-900 text-white">
+      {/* Banner */}
       <div
-        className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-30"
-        style={{ backgroundImage: `url(${anime.bannerImage})` }}
-        aria-hidden="true"
-      ></div>
+        className="w-full h-56 md:h-72 lg:h-96 bg-cover bg-center relative"
+        style={{
+          backgroundImage: `linear-gradient(to bottom, rgba(7,7,7,0.6), rgba(7,7,7,0.85)), url(${anime.bannerImage})`,
+        }}
+      >
+        {/* optional small overlay content could go here */}
+      </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        {/* Left */}
-        <div className="flex-shrink-0 w-full md:w-64 flex flex-col items-center gap-4">
-          <img
-            src={anime.coverImage}
-            alt={anime.title}
-            className="rounded-xl shadow-lg w-full"
-          />
-          <div className="bg-black text-pink-400 w-full text-center py-2 rounded-b-xl font-semibold text-sm mt-2">
-            <FaMicrophone className="inline mr-1" />
-            Watch2gether
-          </div>
-          <div className="flex gap-4 w-full">
-              <a href={`/watch/${id}`} className="flex items-center justify-center gap-2 bg-pink-400 hover:bg-pink-500 transition text-black font-semibold rounded-full px-6 py-2 w-full">
-                <FaPlay /> Watch now
-              </a>
-            <button className="bg-white text-black font-semibold rounded-full px-6 py-2 w-full hover:bg-gray-200 transition">
-              + Add to List
-            </button>
-          </div>
-        </div>
+      {/* Main area */}
+      <div className="max-w-6xl mx-auto px-4 -mt-28 relative">
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+          {/* Left: Poster + buttons */}
+          <div className="relative z-20 md:w-56 w-44 flex-shrink-0">
+            <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-700">
+              <img src={anime.coverImage} alt={anime.title} className="w-full h-auto object-cover" />
+            </div>
 
-        {/* Center */}
-        <div className="flex-1 flex flex-col gap-4">
-          <p className="text-sm text-gray-400">
-            <a href="/home">Home</a> &bull; {anime.type} &bull; {anime.romaji || anime.title}
-          </p>
-          <h1 className="text-4xl font-extrabold">{anime.romaji || anime.title}</h1>
-
-          {/* Badges */}
-          <div className="flex flex-wrap gap-2 items-center text-xs font-semibold">
-            {badges.map((badge, idx) => (
-              <span
-                key={idx}
-                className={`${badge.bgColor} rounded-md px-3 py-1 flex items-center gap-1 shadow-sm`}
+            <div className="mt-4 flex gap-3">
+              <Link
+                to={`/watch/${id}`}
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-black font-bold py-3 rounded-full shadow"
+                aria-label="Watch now"
               >
-                {badge.label}
-                {badge.icon && badge.icon}
-              </span>
-            ))}
-            <span className="text-gray-400 mx-2">&bull;</span>
-            <span>{anime.type}</span>
-            <span className="text-gray-400 mx-2">&bull;</span>
-            <span>{anime.duration}</span>
-          </div>
+                <FaPlay /> Watch
+              </Link>
 
-          {/* Description */}
-          <p className="text-sm mt-4">
-            {truncatedDescription}
-            {anime.description && anime.description.length > 300 && (
               <button
-                onClick={() => setDescExpanded(!descExpanded)}
-                className="text-pink-400 font-semibold ml-2"
+                className="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700"
+                title="Add to list"
               >
-                {descExpanded ? "Less" : "+ More"}
+                <FaPlus />
               </button>
-            )}
-          </p>
-
-          <p className="text-sm mt-4 text-gray-300">
-            Senpai  is the best site to watch <strong>{anime.title || anime.japaneseTitle}</strong> SUB
-            online, or you can even watch <strong>{anime.title || anime.japaneseTitle}</strong> DUB in
-            HD quality. You can also find <strong>{anime.studios}</strong> anime on
-            Senpai website.
-          </p>
-
-          {/* Share */}
-          <div className="flex items-center gap-4 mt-8">
-            <img
-              src="https://i.pinimg.com/originals/fe/4f/be/fe4fbee33daaa301e2155702962fa927.gif"
-              alt="avatar"
-              className="w-12 h-12 rounded-full"
-            />
-            <div>
-              <p className="text-pink-400 font-semibold">Share Anime</p>
-              <p className="text-sm text-gray-300">to your friends</p>
             </div>
-            <div className="ml-auto flex items-center gap-2 text-gray-400 text-xs">
-              <span>157 Shares</span>
-              <button className="bg-blue-500 hover:bg-blue-600 rounded-full p-2">
-                <FaTelegramPlane className="text-white" />
+
+            <div className="mt-3 flex gap-2 items-center">
+              <button
+                className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-700"
+                onClick={() => {
+                  if (promoVideos.length > 0) {
+                    setPromoUrl(promoVideos[0].trailer.embed_url);
+                    setIsModalOpen(true);
+                  }
+                }}
+                aria-label="Open trailer"
+              >
+                Trailer
               </button>
-              <button className="bg-black hover:bg-gray-800 rounded-full p-2">
-                <FaTwitter className="text-white" />
-              </button>
-              <button className="bg-blue-700 hover:bg-blue-800 rounded-full p-2">
-                <FaFacebookF className="text-white" />
-              </button>
-              <button className="bg-orange-500 hover:bg-orange-600 rounded-full p-2">
-                <FaRedditAlien className="text-white" />
-              </button>
-              <button className="bg-green-600 hover:bg-green-700 rounded-full p-2">
-                <FaShareAlt className="text-white" />
+
+              <button className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-700">
+                <FaShareAlt /> Share
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Right */}
-        <div className="w-72 flex-shrink-0 bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-xl p-6 text-sm space-y-3 border border-gray-700">
-          <div>
-            <span className="font-semibold">Japanese:</span>{" "}
-            {anime.japaneseTitle || "N/A"}
-          </div>
-          <div>
-            <span className="font-semibold">Synonyms:</span>{" "}
-            {anime.synonyms && anime.synonyms.length > 0 ? anime.synonyms.join(", ") : "N/A"}
-          </div>
-          <div>
-            <span className="font-semibold">Aired:</span> {anime.aired}
-          </div>
-          <div>
-            <span className="font-semibold">Premiered:</span> {anime.premiered}
-          </div>
-          <div>
-            <span className="font-semibold">Duration:</span> {anime.duration}
-          </div>
-          <div>
-            <span className="font-semibold">Status:</span> {anime.status}
-          </div>
-          <div>
-            <span className="font-semibold">MAL Score:</span> {anime.malScore}
-          </div>
-          <div>
-            <span className="font-semibold">Genres:</span>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {anime.genres.map((genre) => (
-                <Genre key={genre} genre={genre} />
-              ))}
+          {/* Middle: Title, badges, desc */}
+          <div className="flex-1 z-20">
+            <p className="text-sm text-gray-400 mb-1">
+              <Link to="/home" className="text-gray-400 hover:underline">Home</Link> &nbsp;•&nbsp; {anime.type} {anime.season ? `• ${anime.season}` : ""}
+            </p>
+
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">{anime.title}</h1>
+            <p className="text-sm text-gray-400 mt-1">{anime.japaneseTitle}</p>
+
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <span className="bg-white text-black px-3 py-1 rounded-md text-xs font-semibold">Score: {anime.ratingPercentage}</span>
+              <span className="bg-pink-500 text-white px-3 py-1 rounded-md text-xs font-semibold">{anime.type}</span>
+              <span className="bg-green-600 text-white px-3 py-1 rounded-md text-xs font-semibold">{anime.status}</span>
+              <span className="bg-gray-800 text-gray-200 px-3 py-1 rounded-md text-xs font-semibold">
+                {anime.totalEpisodes ? `${anime.totalEpisodes} Episodes` : "Episodes: N/A"}
+              </span>
+              <span className="text-gray-400 text-xs ml-1">• {anime.duration}</span>
+            </div>
+
+            {/* Description */}
+            <div className="mt-6 text-gray-200 max-w-3xl">
+              <p className="text-sm leading-relaxed">
+                {truncated}
+                {anime.description && anime.description.length > 350 && (
+                  <button
+                    onClick={() => setDescExpanded(!descExpanded)}
+                    className="ml-2 text-pink-400 font-semibold inline-flex items-center gap-1"
+                  >
+                    {descExpanded ? <><FaChevronUp /> Less</> : <><FaChevronDown /> More</>}
+                  </button>
+                )}
+              </p>
+
+              {/* small promo text */}
+              <p className="text-xs text-gray-500 mt-3">
+                Senpai — Watch <strong>{anime.title}</strong> in high quality. Posters and banners are provided by AniList data via your API.
+              </p>
+            </div>
+
+            {/* Social / Share row */}
+            <div className="mt-8 flex items-center gap-3">
+              <div className="text-sm text-pink-400 font-semibold">Share</div>
+              <div className="flex items-center gap-2">
+                <button className="bg-blue-600 hover:bg-blue-700 p-2 rounded-full"><FaTelegramPlane /></button>
+                <button className="bg-black hover:bg-gray-800 p-2 rounded-full"><FaTwitter /></button>
+                <button className="bg-blue-700 hover:bg-blue-800 p-2 rounded-full"><FaFacebookF /></button>
+                <button className="bg-orange-500 hover:bg-orange-600 p-2 rounded-full"><FaRedditAlien /></button>
+              </div>
+              <div className="ml-auto text-sm text-gray-400">Popularity: {anime.popularity.toLocaleString?.() ?? anime.popularity}</div>
             </div>
           </div>
-          <div>
-            <span className="font-semibold">Studios:</span> {anime.studios}
-          </div>
-          <div>
-            <span className="font-semibold">Producers:</span>{" "}
-            {anime.producers}
-          </div>
+
+          {/* Right column: meta card */}
+          <aside className="w-80 hidden lg:block z-20">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-3 text-sm">
+              <div><span className="font-semibold">Japanese:</span> <span className="text-gray-300">{anime.japaneseTitle}</span></div>
+              <div><span className="font-semibold">Synonyms:</span> <span className="text-gray-300">{anime.synonyms.length ? anime.synonyms.join(", ") : "N/A"}</span></div>
+              <div><span className="font-semibold">Aired:</span> <span className="text-gray-300">{anime.startDate?.year ? `${anime.startDate.year}` : "N/A"}</span></div>
+              <div><span className="font-semibold">Duration:</span> <span className="text-gray-300">{anime.duration}</span></div>
+              <div><span className="font-semibold">Status:</span> <span className="text-gray-300">{anime.status}</span></div>
+              <div><span className="font-semibold">MAL Score:</span> <span className="text-gray-300">{anime.ratingPercentage}</span></div>
+              <div>
+                <span className="font-semibold">Genres:</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {anime.genres.map((g) => <Genre key={g} genre={g} />)}
+                </div>
+              </div>
+              <div><span className="font-semibold">Studios:</span> <span className="text-gray-300">{anime.studios.length ? anime.studios.join(", ") : "Unknown"}</span></div>
+              <div><span className="font-semibold">Type:</span> <span className="text-gray-300">{anime.type}</span></div>
+            </div>
+          </aside>
         </div>
       </div>
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Trailers</h2>
-            {promoVideos.length === 0 && (
-              <p className="text-gray-400">No promo videos available.</p>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {promoVideos.map((promo, index) => (
-                <div
-                  key={index}
-                  className="relative cursor-pointer rounded-lg overflow-hidden shadow-lg"
-                  onClick={() => {
-                    setPromoVideoUrl(promo.trailer.embed_url);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <img
-                    src={promo.trailer.images.maximum_image_url || anime.coverImage}
-                    alt={`Trailer ${index + 1}`}
-                    className="w-full h-auto object-cover rounded-lg"
-                    style={{ aspectRatio: "16/9" }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
-                    <FaPlay className="text-white text-3xl sm:text-4xl md:text-5xl" />
-                  </div>
-                  <div className="absolute bottom-2 left-2 text-white text-xs bg-black bg-opacity-60 rounded px-2 py-1">
-                    PV {index + 1}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-      {isModalOpen && (
+      {/* Trailer modal */}
+      {isModalOpen && promoUrl && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 sm:p-6"
-          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+          onClick={() => {
+            setIsModalOpen(false);
+            setPromoUrl(null);
+          }}
         >
-          <div
-            className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <button
-              className="absolute top-2 right-2 text-white text-3xl sm:text-4xl font-bold z-50 hover:text-pink-400 transition-colors"
-              onClick={() => {
-                setIsModalOpen(false);
-                setPromoVideoUrl(null);
-              }}
-              aria-label="Close video modal"
-            >
-              &times;
-            </button>
+              className="absolute top-3 right-4 text-white text-3xl font-bold z-50"
+              onClick={() => { setIsModalOpen(false); setPromoUrl(null); }}
+              aria-label="Close"
+            >&times;</button>
+
             <iframe
-              src={promoVideoUrl}
-              title="Promo Video"
+              src={promoUrl}
+              title="Promo"
               allow="autoplay; encrypted-media"
               allowFullScreen
               className="w-full h-full"
               frameBorder="0"
-            ></iframe>
+            />
           </div>
         </div>
       )}
+
+      {/* if trailer thumbnails exist show small row under main (optional) */}
+      {promoVideos.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 mt-8">
+          <h3 className="text-lg font-semibold mb-3">Trailers</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            {promoVideos.map((p, i) => (
+              <div
+                key={i}
+                className="cursor-pointer rounded overflow-hidden relative"
+                onClick={() => {
+                  setPromoUrl(p.trailer.embed_url);
+                  setIsModalOpen(true);
+                }}
+                style={{ aspectRatio: "16/9" }}
+              >
+                <img src={p.trailer.images.maximum_image_url || anime.coverImage} alt={`Trailer ${i+1}`} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                  <FaPlay className="text-white text-2xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* === RECOMMENDATIONS === */}
+{anime?.recommendations && anime.recommendations.length > 0 && (
+  <div className="max-w-6xl mx-auto px-4 mt-10 mb-16">
+    <h2 className="text-2xl font-bold mb-4">Recommended Anime</h2>
+
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
+      {anime.recommendations.map((rec) => (
+        <Link
+          key={rec.id}
+          to={`/anime/${rec.id}`} // open another anime page
+          className="group relative bg-gray-800 rounded-lg overflow-hidden shadow hover:scale-[1.06] transition-transform"
+        >
+          <img
+            src={rec.image}
+            alt={rec.title?.english || rec.title?.romaji}
+            className="w-full h-auto object-cover aspect-[3/4]"
+          />
+          <div className="p-2 text-xs font-semibold text-gray-200">
+            {(rec.title?.english || rec.title?.romaji)?.slice(0,40)}
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
 
     </div>
   );
