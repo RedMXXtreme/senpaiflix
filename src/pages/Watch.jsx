@@ -199,7 +199,7 @@ export default function Watch() {
           return `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub`;
         case "HD-5":
           const episodeIdIni = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
-          return `https://megaplay.buzz/stream/s-4/${episodeIdIni}/sub`;
+          return `https://megaplay.buzz/stream/s-4/${episodeIdIni}/dub`;
         case "HD-2":
           const episodeIdDub = stellerEpisodes[ep - 1]?.id?.split("$episode$")[1];
           return `https://megaplay.buzz/stream/s-2/${episodeIdDub}/dub`;
