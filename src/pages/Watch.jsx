@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import Countdowm from "../components/countdown.jsx";
 import SeasonsSection from "../components/SeasonsSection.jsx";
 import Loader from "../components/Loader.jsx";
-import { fetchAnimeWatch, fetchAnimeRecommendations, fetchAnimeInfoFromSteller } from "../utils/anilistApi";
+import { fetchAnimeWatch, fetchAnimeRecommendations, fetchAnimeInfoFromSteller, fetchEpisodesFromJikan } from "../utils/anilistApi";
 import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai, fetchTMDBId } from "../utils/streamingApi";
 
 export default function Watch() {
@@ -43,34 +43,113 @@ export default function Watch() {
         const media = await fetchAnimeWatch(id);
         setAnime(media);
 
+        // Check if anime is hentai
+        const isHentaiGenre = media?.genres?.includes("Hentai");
 
         // Fetch TMDB ID
         const query = media.title.english || media.title.romaji;
         const tmdb = await fetchTMDBId(query);
         setTmdbId(tmdb);
 
-        // Fetch episodes from Steller API
-        let stellerData = null;
-        try {
-          stellerData = await fetchAnimeInfoFromSteller(id);
-          if (stellerData.episodes && Array.isArray(stellerData.episodes)) {
-            setStellerEpisodes(stellerData.episodes);
-            console.log(`Fetched ${stellerData.episodes.length} episodes from Steller API`);
+        let episodeData = null;
+        let allEpisodes = [];
+
+        if (isHentaiGenre) {
+          // For hentai, try Steller API first, then fallback to Jikan/AniList
+          try {
+            episodeData = await fetchAnimeInfoFromSteller(id);
+            if (episodeData && episodeData.episodes && Array.isArray(episodeData.episodes) && episodeData.episodes.length > 0) {
+              allEpisodes = Array.from({ length: episodeData.episodes.length }, (_, i) => i + 1);
+              setStellerEpisodes(episodeData.episodes);
+              console.log(`Fetched ${episodeData.episodes.length} episodes from Steller API for hentai`);
+            } else {
+              // Fallback to Jikan API
+              const jikanEpisodes = await fetchEpisodesFromJikan(media.idMal);
+              if (jikanEpisodes && jikanEpisodes.length > 0) {
+                allEpisodes = Array.from({ length: jikanEpisodes.length }, (_, i) => i + 1);
+                setStellerEpisodes(jikanEpisodes.map(epId => ({ id: `${id}$episode$${epId}`, title: `Episode ${epId}` })));
+                console.log(`Fetched ${jikanEpisodes.length} episodes from Jikan API for hentai`);
+              } else {
+                // Final fallback to AniList episode count
+                const anilistData = await fetchAnimeInfoFromAniList(id);
+                if (anilistData && anilistData.episodes && Array.isArray(anilistData.episodes)) {
+                  allEpisodes = Array.from({ length: anilistData.episodes.length }, (_, i) => i + 1);
+                  setStellerEpisodes(anilistData.episodes.map(ep => ({ id: `${id}$episode$${ep.number}`, title: ep.title })));
+                  console.log(`Fetched ${anilistData.episodes.length} episodes from AniList API for hentai`);
+                } else {
+                  allEpisodes = [1];
+                  setStellerEpisodes([]);
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Failed to fetch episodes from Steller API for hentai:", error);
+            // Fallback to Jikan API
+            try {
+              const jikanEpisodes = await fetchEpisodesFromJikan(media.idMal);
+              if (jikanEpisodes && jikanEpisodes.length > 0) {
+                allEpisodes = Array.from({ length: jikanEpisodes.length }, (_, i) => i + 1);
+                setStellerEpisodes(jikanEpisodes.map(epId => ({ id: `${id}$episode$${epId}`, title: `Episode ${epId}` })));
+                console.log(`Fetched ${jikanEpisodes.length} episodes from Jikan API for hentai`);
+              } else {
+                // Final fallback to AniList episode count
+                const anilistData = await fetchAnimeInfoFromAniList(id);
+                if (anilistData && anilistData.episodes && Array.isArray(anilistData.episodes)) {
+                  allEpisodes = Array.from({ length: anilistData.episodes.length }, (_, i) => i + 1);
+                  setStellerEpisodes(anilistData.episodes.map(ep => ({ id: `${id}$episode$${ep.number}`, title: ep.title })));
+                  console.log(`Fetched ${anilistData.episodes.length} episodes from AniList API for hentai`);
+                } else {
+                  allEpisodes = [1];
+                  setStellerEpisodes([]);
+                }
+              }
+            } catch (jikanError) {
+              console.error("Failed to fetch episodes from Jikan API for hentai:", jikanError);
+              // Final fallback to AniList episode count
+              try {
+                const anilistData = await fetchAnimeInfoFromAniList(id);
+                if (anilistData && anilistData.episodes && Array.isArray(anilistData.episodes)) {
+                  allEpisodes = Array.from({ length: anilistData.episodes.length }, (_, i) => i + 1);
+                  setStellerEpisodes(anilistData.episodes.map(ep => ({ id: `${id}$episode$${ep.number}`, title: ep.title })));
+                  console.log(`Fetched ${anilistData.episodes.length} episodes from AniList API for hentai`);
+                } else {
+                  allEpisodes = [1];
+                  setStellerEpisodes([]);
+                }
+              } catch (anilistError) {
+                console.error("Failed to fetch episodes from AniList API for hentai:", anilistError);
+                allEpisodes = [1];
+                setStellerEpisodes([]);
+              }
+            }
           }
-        } catch (error) {
-          console.error("Failed to fetch episodes from Steller API:", error);
-        } finally {
-          setIsEpisodesLoading(false);
+        } else {
+          // For non-hentai, use Steller API
+          try {
+            episodeData = await fetchAnimeInfoFromSteller(id);
+            if (episodeData.episodes && Array.isArray(episodeData.episodes)) {
+              setStellerEpisodes(episodeData.episodes);
+              allEpisodes = Array.from({ length: episodeData.episodes.length }, (_, i) => i + 1);
+              console.log(`Fetched ${episodeData.episodes.length} episodes from Steller API`);
+            }
+          } catch (error) {
+            console.error("Failed to fetch episodes from Steller API:", error);
+            // Fallback to 1 episode
+            allEpisodes = [1];
+            setStellerEpisodes([]);
+          }
         }
 
-        // Set relations from Steller API
-        if (stellerData && stellerData.relations && Array.isArray(stellerData.relations)) {
-          setRelations(stellerData.relations);
+        setIsEpisodesLoading(false);
+
+        // Set relations from Steller API (only for non-hentai, as hentai might not have relations)
+        if (!isHentaiGenre && episodeData && episodeData.relations && Array.isArray(episodeData.relations)) {
+          setRelations(episodeData.relations);
         }
 
-        // Fetch seasons from Zorime API
-        if (stellerData && stellerData.episodes && stellerData.episodes.length > 0) {
-          const firstEpisodeId = stellerData.episodes[0].id;
+        // Fetch seasons from Zorime API (only for non-hentai)
+        if (!isHentaiGenre && episodeData && episodeData.episodes && episodeData.episodes.length > 0) {
+          const firstEpisodeId = episodeData.episodes[0].id;
           if (firstEpisodeId && firstEpisodeId.includes('$episode$')) {
             const animeId = firstEpisodeId.split('$episode$')[0];
             try {
@@ -86,18 +165,6 @@ export default function Watch() {
               console.error("Error fetching seasons from Zorime API:", error);
             }
           }
-        }
-
-        // Get episodes from Steller API only
-        let allEpisodes = [];
-
-        if (stellerData && stellerData.episodes && Array.isArray(stellerData.episodes) && stellerData.episodes.length > 0) {
-          allEpisodes = Array.from({ length: stellerData.episodes.length }, (_, i) => i + 1);
-          console.log(`Using ${stellerData.episodes.length} episodes from Steller API episodes array`);
-        } else {
-          // Fallback to 1 episode if no data available
-          allEpisodes = [1];
-          console.log(`No episode data from Steller API, defaulting to 1 episode`);
         }
 
         setReleasedEpisodes(allEpisodes);
