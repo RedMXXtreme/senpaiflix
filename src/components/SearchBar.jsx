@@ -12,39 +12,16 @@ const SearchBar = () => {
   const searchAniList = async (searchValue) => {
     setLoading(true);
     try {
-      const response = await fetch("https://graphql.anilist.co", {
-        method: "POST",
+      const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/${searchValue}`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          query: `
-            query ($search: String) {
-              Page(page: 1, perPage: 10) {
-                media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
-                  id
-                  title {
-                    romaji
-                    english
-                  }
-                  coverImage {
-                    large
-                  }
-                  seasonYear
-                  format
-                  duration
-                  description
-                }
-              }
-            }
-          `,
-          variables: { search: searchValue },
-        }),
       });
 
       const data = await response.json();
-      setResults(data.data.Page.media);
+      setResults(data.results || []);
     } catch (error) {
       console.error("Error fetching from AniList:", error);
       setResults([]);
@@ -86,6 +63,13 @@ const SearchBar = () => {
           placeholder="Search anime..."
           value={query}
           onChange={handleSearch}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && query.trim().length > 2) {
+              navigate(`/search?query=${query.trim()}`);
+              setQuery("");
+              setResults([]);
+            }
+          }}
           className="w-full px-4 py-2 pr-10 text-white bg-transparent placeholder-gray-500 focus:outline-none"
           style={{ position: "relative", zIndex: 10000 }}
         />
@@ -141,13 +125,13 @@ const SearchBar = () => {
                   className="flex items-center gap-3 p-2 hover:bg-gray-700 cursor-pointer"
                 >
                   <img
-                    src={anime.coverImage?.large}
-                    alt={anime.title.english || anime.title.romaji}
+                    src={anime.image}
+                    alt={anime.title.userPreferred || anime.title.romaji}
                     className="w-12 h-16 object-cover rounded"
                   />
                   <div className="flex flex-col flex-grow">
                     <span className="font-semibold text-white">
-                      {anime.title.english || anime.title.romaji}
+                      {anime.title.userPreferred || anime.title.romaji}
                     </span>
                     <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-300">
                       <span>
@@ -158,11 +142,11 @@ const SearchBar = () => {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1 text-xs text-gray-400">
-                      <span>{anime.seasonYear || "?"}</span>
+                      <span>{anime.releaseDate || "?"}</span>
                       <span>•</span>
-                      <span>{anime.format || "?"}</span>
+                      <span>{anime.type || "?"}</span>
                       <span>•</span>
-                      <span>{anime.duration ? `${anime.duration}m` : "?"}</span>
+                      <span>{anime.totalEpisodes ? `${anime.totalEpisodes} EP` : "?"}</span>
                     </div>
                   </div>
                 </li>
