@@ -108,7 +108,7 @@ function SeasonsSection({ seasons }) {
                 if (!res.ok) throw new Error("Failed to fetch");
                 const data = await res.json();
                 const anilistId = data.results?.data?.anilistId;
-                if (anilistId) navigate(`/watch/${anilistId}`);
+                if (anilistId) navigate(`/anime/${anilistId}`);
               } catch (err) {
                 console.error("Error fetching season:", err);
                 setSelectedSeason(null);
@@ -141,5 +141,6 @@ function SeasonsSection({ seasons }) {
     </div>
   );
 }
+
 
 export default SeasonsSection;
