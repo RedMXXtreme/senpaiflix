@@ -30,7 +30,7 @@ const fetchWithProxyRetry = async (url, options = {}, maxRetries = 3) => {
 };
 
 export async function fetchIframeUrlFromWatchHentai(animeName, episode) {
-  const cacheKey = `${animeName}-${episode}`;
+  const cacheKey = `watchhentai-${animeName}-${episode}`;
   if (iframeCache.has(cacheKey)) {
     console.log("Returning cached WatchHentai iframe URL for:", cacheKey);
     return iframeCache.get(cacheKey);
@@ -62,7 +62,7 @@ export async function fetchIframeUrlFromWatchHentai(animeName, episode) {
 }
 
 export async function fetchIframeUrlFromHanimeHentai(animeName, episode) {
-  const cacheKey = `${animeName}-${episode}`;
+  const cacheKey = `hanime-${animeName}-${episode}`;
   if (iframeCache.has(cacheKey)) {
     console.log("Returning cached HanimeHentai iframe URL for:", cacheKey);
     return iframeCache.get(cacheKey);
