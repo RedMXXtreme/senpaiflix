@@ -14,7 +14,7 @@ const categoryFetchMap = {
 };
 
 export default function CategoryPage() {
-  const { category, page } = useParams();
+  const { category } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [animeData, setAnimeData] = useState([]);
@@ -24,9 +24,9 @@ export default function CategoryPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const pageFromUrl = parseInt(page) || parseInt(searchParams.get('page')) || 1;
+    const pageFromUrl = parseInt(searchParams.get('page')) || 1;
     setCurrentPage(pageFromUrl);
-  }, [page, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchCategoryData = async () => {
@@ -70,7 +70,7 @@ export default function CategoryPage() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    navigate(`/${category}/${page}`, { replace: true });
+    setSearchParams({ page: page.toString() });
   };
 
   if (loading) return <div> <Loader /></div>;

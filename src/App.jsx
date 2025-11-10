@@ -28,7 +28,7 @@ const AppContent = () => {
         <Route path="/random" element={<Random />} />
         <Route path="/watch/:id/:episodeNumber?" element={<Watch />} />
         <Route path="/waifu" element={<Waifu />} />
-        <Route path="/:category/:page?" element={<CategoryPage />} />
+        <Route path="/:category" element={<CategoryPage />} />
         <Route path="/filter" element={<FilterPage />} />
         <Route path="*" element={<NotFound />} />
 
