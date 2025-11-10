@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, ChevronLeft, Volume2 } from "lucide-react";
-import { sendAniListQuery } from "../utils/anilistApi";
 
 const HeroCarousel = () => {
   const [animeList, setAnimeList] = useState([]);
@@ -10,31 +9,9 @@ const HeroCarousel = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const query = `
-          query {
-            Page(perPage: 10) {
-              media(
-                sort: [TRENDING_DESC, SCORE_DESC, POPULARITY_DESC],
-                type: ANIME
-              ) {
-                id
-                title { romaji english }
-                coverImage { medium extraLarge }
-                episodes
-                duration
-                description(asHtml: false)
-                averageScore
-                season
-                seasonYear
-                startDate { year month day }
-                format
-              }
-            }
-          }
-        `;
-
-        const data = await sendAniListQuery(query);
-        setAnimeList(data.Page.media);
+        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/trending');
+        const data = await response.json();
+        setAnimeList(data.results);
       } catch (err) {
         console.error(err);
       }
@@ -64,20 +41,18 @@ const HeroCarousel = () => {
   const safeCurrent = Math.min(current, animeList.length - 1);
   const anime = animeList[safeCurrent];
 
-  const airedString = anime?.startDate?.year
-    ? `${anime.startDate.day || "??"}/${anime.startDate.month || "??"}/${anime.startDate.year}`
-    : "Unknown";
+  const airedString = anime?.releaseDate || "Unknown";
 
   return (
     <section className="relative h-[90vh] w-full overflow-hidden text-white">
       {/* Background */}
       <div className="absolute inset-0">
         <img
-          src={anime.coverImage.extraLarge || anime.coverImage.medium}
+          src={anime.cover || anime.image}
           className="w-full h-full object-cover scale-110 blur-[20px] brightness-[.35] animate-[heroZoom_6s_ease-in-out_infinite]"
         />
         <img
-          src={anime.coverImage.extraLarge || anime.coverImage.medium}
+          src={anime.cover || anime.image}
           className="w-full h-full object-cover brightness-[.9]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0f0f1b] via-[#0f0f1b]/80 to-transparent" />
@@ -89,7 +64,7 @@ const HeroCarousel = () => {
         {/* mini poster */}
         <div className="mb-4">
           <img
-            src={anime.coverImage.medium}
+            src={anime.image}
             className="w-20 h-28 sm:w-28 sm:h-40 object-cover rounded-xl shadow-xl border border-white/10"
           />
         </div>
@@ -100,11 +75,11 @@ const HeroCarousel = () => {
         </h1>
 
         <div className="flex items-center gap-3 text-sm text-white mb-4 flex-wrap">
-          <span className="flex items-center gap-1"><span className="text-xs">🔘</span> {anime.format || "TV"}</span>
+          <span className="flex items-center gap-1"><span className="text-xs">🔘</span> {anime.type || "TV"}</span>
           <span>⏱️ {anime.duration || "?"} min</span>
           <span>📅 {airedString}</span>
           <span className="bg-pink-500 text-xs px-2 py-0.5 rounded">HD</span>
-          <span className="bg-green-500 text-xs px-2 py-0.5 rounded">cc {anime.episodes || "?"}</span>
+          <span className="bg-green-500 text-xs px-2 py-0.5 rounded">cc {anime.totalEpisodes || "?"}</span>
           <span className="bg-blue-600 text-xs px-2 py-0.5 rounded"><Volume2 size={12} className="inline-block" /> 8</span>
         </div>
 

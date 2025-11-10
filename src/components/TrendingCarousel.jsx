@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { sendAniListQuery } from '../utils/anilistApi';
 
 export default function TrendingCarousel() {
   const [animeData, setAnimeData] = useState([]);
@@ -9,28 +8,9 @@ export default function TrendingCarousel() {
   useEffect(() => {
     const fetchAnime = async () => {
       try {
-        const query = `
-          query {
-            Page(perPage: 10) {
-              media(sort: TRENDING_DESC, type: ANIME) {
-                id
-                title {
-                  romaji
-                  english
-                }
-                coverImage {
-                  large
-                }
-                episodes
-                averageScore
-                popularity
-                format
-              }
-            }
-          }
-        `;
-        const data = await sendAniListQuery(query);
-        setAnimeData(data.Page.media);
+        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/trending?page=2&perPage=10');
+        const data = await response.json();
+        setAnimeData(data.results);
       } catch (error) {
         console.error('Error fetching anime data:', error);
       }
@@ -56,7 +36,7 @@ export default function TrendingCarousel() {
           >
             <div className="text-2xl font-bold text-green-400 w-6 text-center">{index + 1}</div>
             <img
-              src={anime.coverImage.large}
+              src={anime.image}
               alt={anime.title.romaji}
               className="w-16 h-16 object-cover rounded-md mx-3"
             />
@@ -71,13 +51,13 @@ export default function TrendingCarousel() {
 
               <div className="flex items-center gap-1 mt-1 text-xs">
                 <span className="bg-red-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
-                  CC {anime.episodes ?? '—'}
+                  CC {anime.totalEpisodes ?? '—'}
                 </span>
                 <span className="bg-green-600 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
-                  🔍 {anime.averageScore ?? '—'}
+                  🔍 {anime.rating ?? '—'}
                 </span>
                 <span className="bg-gray-700 px-2 py-0.5 rounded-full text-white font-semibold text-[10px]">
-                  {anime.format ?? '—'}
+                  {anime.type ?? '—'}
                 </span>
               </div>
             </div>

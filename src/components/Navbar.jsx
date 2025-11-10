@@ -54,7 +54,7 @@ const Navbar = () => {
       </svg>
     </button>
 
-    <Link to="/" className="text-3xl font-extrabold flex items-center gap-1 select-none whitespace-nowrap">
+    <Link to="/home" className="text-3xl font-extrabold flex items-center gap-1 select-none whitespace-nowrap">
       <span>S</span><span className="text-pink-500">!</span><span>anime</span>
     </Link>
   </div>
@@ -124,6 +124,8 @@ const Navbar = () => {
       <Link to="/updates" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>UPDATES</Link>
       <Link to="/ongoing" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>ONGOING</Link>
       <Link to="/recent" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>RECENT</Link>
+      <Link to="/trending" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>TRENDING</Link>
+      <Link to="/popular" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>POPULAR</Link>
       <button
         className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
         onClick={() => {

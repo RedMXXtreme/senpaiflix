@@ -74,6 +74,14 @@ const FrontPageNavbar = () => {
           </Link>
         </li>
         <li>
+          <Link to="/trending" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
+            Trending
+          </Link>
+        </li>
+        <li>
+          <Link to="/popular" className="block px-4 py-2 hover:text-pink-400 transition duration-300">
+            Popular
+          </Link>
         </li>
       </ul>
     </nav>
