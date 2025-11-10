@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchNewReleases, fetchUpdates, fetchOngoing, fetchRecent } from '../utils/anilistApi';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { fetchNewReleases, fetchUpdates, fetchOngoing, fetchRecent, fetchTrending, fetchPopular } from '../utils/anilistApi';
 import Loader from '../components/Loader';
 import PageSlider from '../components/PageSlider';
 
@@ -9,16 +9,24 @@ const categoryFetchMap = {
   updates: fetchUpdates,
   ongoing: fetchOngoing,
   recent: fetchRecent,
+  trending: fetchTrending,
+  popular: fetchPopular,
 };
 
 export default function CategoryPage() {
-  const { category } = useParams();
+  const { category, page } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [animeData, setAnimeData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const pageFromUrl = parseInt(page) || parseInt(searchParams.get('page')) || 1;
+    setCurrentPage(pageFromUrl);
+  }, [page, searchParams]);
 
   useEffect(() => {
     const fetchCategoryData = async () => {
@@ -62,6 +70,7 @@ export default function CategoryPage() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+    navigate(`/${category}/${page}`, { replace: true });
   };
 
   if (loading) return <div> <Loader /></div>;
