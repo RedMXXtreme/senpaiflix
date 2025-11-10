@@ -57,7 +57,7 @@ function SeasonsSection({ seasons }) {
                 if (!res.ok) throw new Error("Failed to fetch");
                 const data = await res.json();
                 const anilistId = data.results?.data?.anilistId;
-                if (anilistId) navigate(`/watch/${anilistId}`);
+                if (anilistId) navigate(`/anime/${anilistId}`);
               } catch (err) {
                 console.error("Error fetching season:", err);
                 setSelectedSeason(null);
@@ -82,7 +82,7 @@ function SeasonsSection({ seasons }) {
             />
             <div className="absolute inset-0 flex flex-col justify-center items-center text-white bg-black/30">
               <h4 className="font-semibold text-sm mb-1">
-                Season {season.season || 1}
+               {season.season || 1}
               </h4>
             </div>
           </div>
