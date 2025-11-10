@@ -12,6 +12,7 @@ import {
   FaRedditAlien,
   FaChevronDown,
   FaChevronUp,
+  FaChevronRight,
 } from "react-icons/fa";
 
 const Genre = ({ genre }) => (
@@ -45,6 +46,7 @@ const AnimeDetail = () => {
   const [promoVideos, setPromoVideos] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [promoUrl, setPromoUrl] = useState(null);
+  const [showAllCharacters, setShowAllCharacters] = useState(false);
 
   useEffect(() => {
     setAnime(null);
@@ -80,6 +82,7 @@ const AnimeDetail = () => {
           season: d.season || null,
           trailer: d.trailer || null,
           recommendations: d.recommendations || [],
+          characters: d.characters || [], // 👈 add this line
         };
 
         setAnime(animeData);
@@ -295,6 +298,153 @@ const AnimeDetail = () => {
           </div>
         </div>
       )}
+      {/* === CHARACTERS & VOICE ACTORS === */}
+{anime?.characters && anime.characters.length > 0 && (
+  <div className="max-w-6xl mx-auto px-4 mt-12">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-2xl font-bold text-pink-400">
+        Characters & Voice Actors
+      </h2>
+      <button
+        onClick={() => setShowAllCharacters(true)}
+        className="flex items-center gap-1 text-sm text-gray-300 hover:text-pink-400 transition-colors"
+      >
+        View More <FaChevronRight className="text-[10px]" />
+      </button>
+    </div>
+
+    <div className="w-full grid grid-cols-3 max-[1024px]:grid-cols-2 max-[758px]:grid-cols-1 gap-4">
+      {anime.characters.slice(0, 6).map((char) => (
+        <div
+          key={char.id}
+          className="flex justify-between items-center px-3 py-4 rounded-md bg-[#373646] hover:bg-[#444354] transition-all"
+        >
+          {/* Character side */}
+          <div className="w-[50%] overflow-hidden">
+            <div className="flex gap-x-3">
+              <img
+                src={char.image || "https://i.postimg.cc/HnHKvHpz/no-avatar.jpg"}
+                alt={char.name?.full || "Character"}
+                className="w-[45px] h-[45px] rounded-full object-cover flex-shrink-0"
+                loading="lazy"
+              />
+              <div className="flex flex-col justify-center">
+                <h4 className="text-[13px] leading-[1.3em] font-[500] text-gray-200 line-clamp-2">
+                  {char.name?.full || "Unknown"}
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-[3px]">
+                  {char.role || ""}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Voice actor side */}
+          {char.voiceActors?.length > 0 && (
+            <div className="w-[50%] overflow-hidden">
+              <div className="flex justify-end gap-x-2 items-center">
+                <div className="flex flex-col items-end">
+                  <span className="text-[13px] leading-[1.3em] font-[400] text-gray-200 line-clamp-2">
+                    {char.voiceActors[0].name?.full || "Unknown"}
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    {char.voiceActors[0].language || ""}
+                  </span>
+                </div>
+                <img
+                  src={
+                    char.voiceActors[0].image ||
+                    "https://i.postimg.cc/HnHKvHpz/no-avatar.jpg"
+                  }
+                  alt={char.voiceActors[0].name?.full || "Voice Actor"}
+                  className="w-[45px] h-[45px] rounded-full object-cover grayscale hover:grayscale-0 transition-all duration-300 ease-in-out cursor-pointer"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+
+    {/* Optional: modal for all characters (toggle with state) */}
+    {showAllCharacters && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4"
+        onClick={() => setShowAllCharacters(false)}
+      >
+        <div
+          className="bg-gray-900 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="text-xl font-bold text-pink-400 mb-4">
+            All Characters & Voice Actors
+          </h2>
+          <div className="w-full grid grid-cols-3 max-[1024px]:grid-cols-2 max-[758px]:grid-cols-1 gap-4">
+            {anime.characters.map((char) => (
+              <div
+                key={char.id}
+                className="flex justify-between items-center px-3 py-4 rounded-md bg-[#373646] hover:bg-[#444354] transition-all"
+              >
+                {/* Character side */}
+                <div className="w-[50%] overflow-hidden">
+                  <div className="flex gap-x-3">
+                    <img
+                      src={char.image || "https://i.postimg.cc/HnHKvHpz/no-avatar.jpg"}
+                      alt={char.name?.full || "Character"}
+                      className="w-[45px] h-[45px] rounded-full object-cover flex-shrink-0"
+                      loading="lazy"
+                    />
+                    <div className="flex flex-col justify-center">
+                      <h4 className="text-[13px] leading-[1.3em] font-[500] text-gray-200 line-clamp-2">
+                        {char.name?.full || "Unknown"}
+                      </h4>
+                      <p className="text-[11px] text-gray-400 mt-[3px]">
+                        {char.role || ""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Voice actor side */}
+                {char.voiceActors?.length > 0 && (
+                  <div className="w-[50%] overflow-hidden">
+                    <div className="flex justify-end gap-x-2 items-center">
+                      <div className="flex flex-col items-end">
+                        <span className="text-[13px] leading-[1.3em] font-[400] text-gray-200 line-clamp-2">
+                          {char.voiceActors[0].name?.full || "Unknown"}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {char.voiceActors[0].language || ""}
+                        </span>
+                      </div>
+                      <img
+                        src={
+                          char.voiceActors[0].image ||
+                          "https://i.postimg.cc/HnHKvHpz/no-avatar.jpg"
+                        }
+                        alt={char.voiceActors[0].name?.full || "Voice Actor"}
+                        className="w-[45px] h-[45px] rounded-full object-cover grayscale hover:grayscale-0 transition-all duration-300 ease-in-out cursor-pointer"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowAllCharacters(false)}
+            className="mt-6 bg-pink-500 hover:bg-pink-600 text-black font-bold px-5 py-2 rounded-full shadow mx-auto block"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
       {/* === RECOMMENDATIONS === */}
 {anime?.recommendations && anime.recommendations.length > 0 && (
   <div className="max-w-6xl mx-auto px-4 mt-10 mb-16">
