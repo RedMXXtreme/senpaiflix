@@ -26,7 +26,7 @@ const AppContent = () => {
         <Route path="/anime/:id" element={<AnimeDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/random" element={<Random />} />
-        <Route path="/watch/:id/:episodeNumber?" element={<Watch />} />
+        <Route path="/watch/:id" element={<Watch />} />
         <Route path="/waifu" element={<Waifu />} />
         <Route path="/:category" element={<CategoryPage />} />
         <Route path="/filter" element={<FilterPage />} />

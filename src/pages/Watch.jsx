@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useParams, Link } from "react-router-dom";
-import Countdowm from "../components/countdown.jsx";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useParams, Link, useSearchParams } from "react-router-dom";
+import Countdown from "../components/countdown.jsx";
 import SeasonsSection from "../components/SeasonsSection.jsx";
 import Loader from "../components/Loader.jsx";
 import { fetchAnimeWatch, fetchAnimeRecommendations, fetchAnimeInfoFromSteller, fetchEpisodesFromJikan } from "../utils/anilistApi";
@@ -9,27 +9,27 @@ import { fetchIframeUrlFromHanimeHentai, fetchIframeUrlFromWatchHentai, fetchTMD
 // Constants for server configurations
 const SERVERS = {
   SUB: [
-    { key: "HD-1", label: "HD-1", url: (aniId, ep) => `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/sub` },
-    { key: "HD-2", label: "HD-2", url: (aniId, ep, stellerEpisodes) => `https://megaplay.buzz/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` },
-    { key: "HD-3", label: "HD-3", url: (aniId, ep) => `https://vidnest.fun/anime/${aniId}/${ep}/sub` },
-    { key: "HD-4", label: "HD-4", url: (aniId, ep) => `https://vidnest.fun/animepahe/${aniId}/${ep}/sub` },
-    { key: "HD-5", label: "HD-5", url: (aniId, ep) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub` },
-    { key: "HD-6", label: "HD-6", url: (aniId, ep, stellerEpisodes, tmdbId) => tmdbId ? `https://megaplay.buzz/stream/s-4/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` : null },
-    { key: "MegaPlay", label: "MegaPlay", url: (aniId, ep, stellerEpisodes) => stellerEpisodes.length > 0 ? `https://vidwish.live/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` : null },
+    { key: "HD-1", label: "HD-1", url: ({ aniId, ep }) => `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/sub` },
+    { key: "HD-2", label: "HD-2", url: ({ aniId, ep, stellerEpisodes }) => `https://megaplay.buzz/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` },
+    { key: "HD-3", label: "HD-3", url: ({ aniId, ep }) => `https://vidnest.fun/anime/${aniId}/${ep}/sub` },
+    { key: "HD-4", label: "HD-4", url: ({ aniId, ep }) => `https://vidnest.fun/animepahe/${aniId}/${ep}/sub` },
+    { key: "HD-5", label: "HD-5", url: ({ aniId, ep }) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/sub` },
+    { key: "HD-6", label: "HD-6", url: ({ aniId, ep, stellerEpisodes, tmdbId }) => tmdbId ? `https://megaplay.buzz/stream/s-4/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` : null },
+    { key: "MegaPlay", label: "MegaPlay", url: ({ aniId, ep, stellerEpisodes }) => stellerEpisodes.length > 0 ? `https://vidwish.live/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/sub` : null },
   ],
   DUB: [
-    { key: "HD-1", label: "HD-1", url: (aniId, ep) => `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/dub` },
-    { key: "HD-2", label: "HD-2", url: (aniId, ep, stellerEpisodes) => `https://megaplay.buzz/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` },
-    { key: "HD-3", label: "HD-3", url: (aniId, ep) => `https://vidnest.fun/anime/${aniId}/${ep}/dub` },
-    { key: "HD-4", label: "HD-4", url: (aniId, ep) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub` },
-    { key: "HD-5", label: "HD-5", url: (aniId, ep, stellerEpisodes, tmdbId) => tmdbId ? `https://megaplay.buzz/stream/s-4/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` : null },
-    { key: "MegaPlay", label: "MegaPlay", url: (aniId, ep, stellerEpisodes) => stellerEpisodes.length > 0 ? `https://vidwish.live/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` : null },
+    { key: "HD-1", label: "HD-1", url: ({ aniId, ep }) => `https://vidsrc.cc/v2/embed/anime/ani${aniId}/${ep}/dub` },
+    { key: "HD-2", label: "HD-2", url: ({ aniId, ep, stellerEpisodes }) => `https://megaplay.buzz/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` },
+    { key: "HD-3", label: "HD-3", url: ({ aniId, ep }) => `https://vidnest.fun/anime/${aniId}/${ep}/dub` },
+    { key: "HD-4", label: "HD-4", url: ({ aniId, ep }) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/dub` },
+    { key: "HD-5", label: "HD-5", url: ({ aniId, ep, stellerEpisodes, tmdbId }) => tmdbId ? `https://megaplay.buzz/stream/s-4/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` : null },
+    { key: "MegaPlay", label: "MegaPlay", url: ({ aniId, ep, stellerEpisodes }) => stellerEpisodes.length > 0 ? `https://vidwish.live/stream/s-2/${stellerEpisodes[ep - 1]?.id?.split("$episode$")[1]}/dub` : null },
   ],
   HINDI: [
-    { key: "HD-1", label: "HD-1", url: (aniId, ep) => `https://vidnest.fun/anime/${aniId}/${ep}/satoru` },
-    { key: "HD-2", label: "HD-2", url: (aniId, ep) => `https://vidnest.fun/anime/${aniId}/${ep}/hindi` },
-    { key: "HD-3", label: "HD-3", url: (aniId, ep) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/hindi` },
-    { key: "HD-4", label: "HD-4", url: (aniId, ep, tmdbId, anime) => tmdbId ? (anime?.format === "MOVIE" ? `https://vid.techneo.fun/tmdb/movies/${tmdbId}` : `https://vid.techneo.fun/tmdb/tv/${tmdbId}/1/${ep}`) : null },
+    { key: "HD-1", label: "HD-1", url: ({ aniId, ep }) => `https://vidnest.fun/anime/${aniId}/${ep}/satoru` },
+    { key: "HD-2", label: "HD-2", url: ({ aniId, ep }) => `https://vidnest.fun/anime/${aniId}/${ep}/hindi` },
+    { key: "HD-3", label: "HD-3", url: ({ aniId, ep }) => `https://api.cinetaro.buzz/anime/anilist/${aniId}/${ep}/hindi` },
+    { key: "HD-4", label: "HD-4", url: ({ aniId, ep, tmdbId, anime }) => tmdbId ? (anime?.format === "MOVIE" ? `https://vid.techneo.fun/tmdb/movies/${tmdbId}` : `https://vid.techneo.fun/tmdb/tv/${tmdbId}/1/${ep}`) : null },
   ],
   HENTAI: [
     { key: "HD-1", label: "HD-1", source: "hanime" },
@@ -144,7 +144,7 @@ const fetchEpisodesForRegular = async (id) => {
         episodes: episodeData.episodes,
         count: episodeData.episodes.length,
         relations: episodeData.relations,
-        seasons: await fetchSeasons(episodeData.episodes[0]?.id, id),
+        seasons: await fetchSeasons(episodeData.episodes[0]?.id),
       };
     }
   } catch (error) {
@@ -153,7 +153,7 @@ const fetchEpisodesForRegular = async (id) => {
   return { episodes: [], count: 1 };
 };
 
-const fetchSeasons = async (firstEpisodeId, animeId) => {
+const fetchSeasons = async (firstEpisodeId) => {
   if (!firstEpisodeId?.includes('$episode$')) return [];
   try {
     const response = await fetch(`https://zorime-api.vercel.app/api/info?id=${firstEpisodeId.split('$episode$')[0]}`);
@@ -207,7 +207,7 @@ const useIframeUrl = (isHentai, anime, episode, activeServer, sourceType, slug, 
     const servers = SERVERS[sourceType.toUpperCase()] || [];
     const server = servers.find(s => s.key === activeServer);
     if (server) {
-      return server.url(aniId, ep, stellerEpisodes, tmdb, anime) || "";
+      return server.url({ aniId, ep, stellerEpisodes, tmdbId: tmdb, anime }) || "";
     }
     return "";
   }, [isHentai, iframeUrl, episode, anime, tmdbId, sourceType, activeServer, stellerEpisodes]);
@@ -423,27 +423,6 @@ const EpisodeList = ({ releasedEpisodes, stellerEpisodes, episode, setEpisode, i
               </button>
             );
           })}
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/10">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-400">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-[#1e1e1e] hover:bg-[#2a2a2a] rounded disabled:opacity-50 text-sm"
-              >
-                Next
-              </button>
-            </div>
-          )}
         </>
       ) : (
         <p className="text-gray-400 text-sm">No episodes released yet.</p>
@@ -590,6 +569,7 @@ const Recommendations = ({ recommendations, isRecommendationsLoading }) => (
 // Main component
 export default function Watch() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sourceType, setSourceType] = useState("sub");
   const [activeServer, setActiveServer] = useState("HD-1");
   const [currentPage, setCurrentPage] = useState(1);
@@ -610,6 +590,21 @@ export default function Watch() {
     error,
   } = useAnimeData(id);
 
+  // Initialize episode from URL query param
+  useEffect(() => {
+    const idFromUrl = searchParams.get('id');
+    if (idFromUrl && stellerEpisodes.length > 0) {
+      const episodeIndex = stellerEpisodes.findIndex(ep => ep.id === idFromUrl);
+      if (episodeIndex !== -1) {
+        setEpisode(episodeIndex + 1);
+      } else {
+        setEpisode(1);
+      }
+    } else if (!idFromUrl) {
+      setEpisode(1);
+    }
+  }, [searchParams, stellerEpisodes, setEpisode]);
+
   const slugify = (str = "") =>
     str.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
@@ -626,6 +621,13 @@ export default function Watch() {
       setActiveServer("HD-1");
     }
   }, [isHentai]);
+
+  // Update URL when episode changes
+  useEffect(() => {
+    if (stellerEpisodes.length > 0 && stellerEpisodes[episode - 1]) {
+      setSearchParams({ id: stellerEpisodes[episode - 1].id });
+    }
+  }, [episode, stellerEpisodes, setSearchParams]);
 
   // Reset to page 1 when episodes change
   useEffect(() => {
@@ -784,7 +786,7 @@ export default function Watch() {
 
           {/* ✅ Countdown Component */}
           <div className="mt-6">
-            <Countdowm title={anime.title.english || anime.title.romaji} />
+            <Countdown title={anime.title.english || anime.title.romaji} />
           </div>
 
           <EpisodeList
