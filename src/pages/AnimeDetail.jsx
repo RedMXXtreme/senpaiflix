@@ -56,7 +56,7 @@ const AnimeDetail = () => {
 
     const fetchAnime = async () => {
       try {
-        const res = await axios.get(`https://steller-tau.vercel.app/meta/anilist/info/${id}`);
+        const res = await axios.get(`https://senpai-di.vercel.app/meta/anilist/info/${id}`);
         const d = res.data;
 
         const animeData = {
@@ -474,5 +474,6 @@ const AnimeDetail = () => {
     </div>
   );
 };
+
 
 export default AnimeDetail;
