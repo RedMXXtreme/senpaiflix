@@ -12,7 +12,7 @@ const SearchBar = () => {
   const searchAniList = async (searchValue) => {
     setLoading(true);
     try {
-      const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/${searchValue}`, {
+      const response = await fetch(`https://senpai-di.vercel.app/meta/anilist/${searchValue}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -168,5 +168,6 @@ const SearchBar = () => {
     </div>
   );
 };
+
 
 export default SearchBar;
