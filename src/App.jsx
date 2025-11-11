@@ -4,7 +4,6 @@ import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
 import FrontPageNavbar from "./components/FrontPageNavbar";
 import AnimeDetail from "./pages/AnimeDetail";
-import MangaInfo from "./components/Manga/MangaInfo";
 import SearchResults from "./pages/SearchResults";
 import Footer from "./components/Footer";
 import FrontPage from "./components/FrontPage";
@@ -28,8 +27,6 @@ const AppContent = () => {
         <Route path="/" element={<FrontPage />} />
         <Route path="/home" element={<Home />} />
         <Route path="/anime/:id" element={<AnimeDetail />} />
-        <Route path="/manga/:id" element={<MangaInfo />} />
-        <Route path="/manga-read/:id" element={<MangaReadPage />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/random" element={<Random />} />
         <Route path="/watch/:id" element={<Watch />} />
@@ -61,4 +58,5 @@ const App = () => {
 };
 
 export default App;
+
 
