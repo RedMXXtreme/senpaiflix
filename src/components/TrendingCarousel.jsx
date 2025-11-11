@@ -8,7 +8,7 @@ export default function TrendingCarousel() {
   useEffect(() => {
     const fetchAnime = async () => {
       try {
-        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/trending?page=2&perPage=10');
+        const response = await fetch('https://senpai-di.vercel.app/meta/anilist/trending?page=2&perPage=10');
         const data = await response.json();
         setAnimeData(data.results);
       } catch (error) {
@@ -67,3 +67,4 @@ export default function TrendingCarousel() {
     </div>
   );
 }
+
