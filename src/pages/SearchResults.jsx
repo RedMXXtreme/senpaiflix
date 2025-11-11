@@ -25,7 +25,7 @@ const SearchResults = () => {
       }
       setLoading(true);
       try {
-        const response = await fetch(`https://steller-tau.vercel.app/meta/anilist/${query}?page=${currentPage}`, {
+        const response = await fetch(`https://senpai-di.vercel.app/meta/anilist/${query}?page=${currentPage}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -188,3 +188,4 @@ const SearchResults = () => {
 };
 
 export default SearchResults;
+
