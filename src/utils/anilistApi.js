@@ -1215,7 +1215,7 @@ export { AniListError, RateLimitError, NetworkError, ValidationError };
 export const fetchAnimeInfoFromSteller = async (id) => {
   try {
     // Primary source: Steller API
-    const response = await axios.get(`https://steller-tau.vercel.app/meta/anilist/info/${id}`);
+    const response = await axios.get(`https://senpai-di.vercel.app/meta/anilist/info/${id}`);
     const data = response.data;
 
     // ✅ If Steller returns valid episodes
@@ -1283,4 +1283,5 @@ export const fetchAnimeInfoFromAniList = async (id) => {
     return null;
   }
 };
+
 
