@@ -9,7 +9,7 @@ const HeroCarousel = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/trending');
+        const response = await fetch('https://senpai-di.vercel.app/meta/anilist/trending');
         const data = await response.json();
         setAnimeList(data.results);
       } catch (err) {
@@ -130,3 +130,4 @@ const HeroCarousel = () => {
 };
 
 export default HeroCarousel;
+
