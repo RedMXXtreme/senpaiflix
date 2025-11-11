@@ -14,7 +14,7 @@ const Random = () => {
       try {
         setLoading(true);
         setHasFetched(true);
-        const response = await fetch('https://steller-tau.vercel.app/meta/anilist/random-anime');
+        const response = await fetch('https://senpai-di.vercel.app/meta/anilist/random-anime');
         if (!response.ok) {
           throw new Error('Failed to fetch random anime');
         }
@@ -57,3 +57,4 @@ const Random = () => {
 };
 
 export default Random;
+
