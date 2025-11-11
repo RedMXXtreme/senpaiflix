@@ -11,7 +11,6 @@ import CategoryPage from "./pages/CategoryPage";
 import FilterPage from "./pages/FilterPage";
 import Random from "./components/Random";
 import Watch from "./pages/Watch";
-import MangaReadPage from "./components/Manga/Manga_readpage";
 import NotFound from "./pages/NotFound";
 import Waifu from "./pages/waifu";
 import SatoruEpisodePlayer from "./components/text";
@@ -58,5 +57,6 @@ const App = () => {
 };
 
 export default App;
+
 
 
