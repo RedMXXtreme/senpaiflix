@@ -126,7 +126,7 @@ const Navbar = () => {
       <Link to="/recent" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>RECENT</Link>
       <Link to="/trending" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>TRENDING</Link>
       <Link to="/popular" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>POPULAR</Link>
-      <Link to ="/test" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>Hin-Anime</Link>
+      <Link to="/hindi" className="px-4 py-2 hover:bg-gray-700 text-white font-semibold" onClick={() => setIsDropdownOpen(false)}>HINDI Anime</Link>
       <button
         className="px-4 py-2 hover:bg-gray-700 text-white font-semibold"
         onClick={() => {

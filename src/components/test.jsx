@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -25,11 +25,6 @@ const TestTitles = () => {
     }
   }
 
-  function stripHtml(html) {
-    const tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  }
 
   const fetchTitles = async () => {
     setLoading(true);
