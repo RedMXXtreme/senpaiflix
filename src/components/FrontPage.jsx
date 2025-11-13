@@ -143,7 +143,9 @@ const FrontPage = () => {
             disabled={!a.id}
             aria-label={`View details for ${a.title?.english || a.title?.romaji || "Unknown anime"}`}
           >
-            {a.title?.english || a.title?.romaji || "Unknown"}
+            {(a.title?.english || a.title?.romaji || "Unknown anime")
+         .slice(0, 30) + ((a.title?.english || a.title?.romaji || "Unknown anime").length > 30 ? "..." : "")}
+   
           </button>
         ))}
       </div>
