@@ -1,0 +1,222 @@
+/* CSS Custom Properties for consistent theming and easier maintenance */
+:root {
+  /* Color Palette */
+  --color-primary-dark: #2a2845;
+  --color-primary-darker: #1a1933;
+  --color-primary-light: #ff6cab;
+  --color-background-dark: rgba(25, 24, 44, 0.9);
+  --color-text-light: #fff;
+  --color-text-secondary: #b8b7d1;
+  --color-text-tertiary: #ddd;
+  --color-border-primary: #3a3855;
+  --color-border-secondary: #35335a;
+  
+  /* Spacing & Sizing */
+  --border-radius-large: 1.5rem;
+  --border-radius-medium: 1rem;
+  --border-radius-small: 5px;
+  --border-radius-pill: 50px;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-xxl: 2.5rem;
+  
+  /* Shadows */
+  --shadow-large: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.3);
+  
+  /* Breakpoints */
+  --breakpoint-tablet: 900px;
+}
+
+/* Content Section */
+.content-section {
+  background: var(--color-primary-darker);
+  color: var(--color-text-tertiary);
+  padding: var(--spacing-xl) var(--spacing-md);
+  display: flex;
+  justify-content: center;
+}
+
+.content-container {
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.content-left {
+  flex: 2 1 600px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.content-left h2 {
+  font-size: 1.8rem;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary-light);
+}
+
+.content-left h3 {
+  margin-top: var(--spacing-lg);
+  color: var(--color-primary-light);
+}
+
+.content-left ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.content-left ul li {
+  margin-bottom: 0.5rem;
+}
+
+.content-right {
+  flex: 1 1 300px;
+  background: var(--color-primary-dark);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-large);
+  color: var(--color-text-tertiary);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.content-right h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--color-primary-light);
+  font-size: 1.2rem;
+}
+
+.post {
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-primary);
+  padding-bottom: var(--spacing-sm);
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.post-category {
+  background: var(--color-primary-light);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: var(--color-text-light);
+}
+
+.post-time {
+  font-style: italic;
+}
+
+.post-comments {
+  font-weight: bold;
+}
+
+.post-title {
+  font-weight: bold;
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.post-author {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.read-more-btn {
+  background: var(--color-primary-light);
+  border: none;
+  border-radius: var(--border-radius-pill);
+  padding: 0.5rem var(--spacing-md);
+  color: var(--color-text-light);
+  cursor: pointer;
+  width: 100%;
+  font-weight: bold;
+  margin-top: var(--spacing-md);
+  transition: background 0.3s ease;
+}
+
+.read-more-btn:hover,
+.read-more-btn:focus {
+  background: color-mix(in srgb, var(--color-primary-light) 80%, black);
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 900px) {
+  .content-container {
+    flex-direction: column;
+  }
+  
+  .content-right {
+    max-height: none;
+  }
+}
+
+/* Focus and Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .read-more-btn,
+  .read-more-btn:hover,
+  .read-more-btn:focus {
+    animation: none;
+    transition: none;
+  }
+};
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {  
+  .content-section {
+    outline: 2px solid white;
+  };
+};
+
+
+.splashscreen {
+  overflow: visible;
+}
+
+.splashscreen-content {
+  overflow: hidden;
+}
+.splashitem {
+  margin: 0px 6px 6px 0px;
+  display: block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  float: left;
+  color: #fff;
+  cursor: pointer;
+}
+.splashoverlay {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(43, 42, 60, 1) 0%,
+    rgba(43, 42, 60, 0) 100%
+  );
+  z-index: 30;
+}
