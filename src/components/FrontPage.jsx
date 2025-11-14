@@ -210,7 +210,7 @@ function FrontPage() {
                   onChange={handleSearch}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && search.trim().length > 2) {
-                      navigate(`/search?keyword=${encodeURIComponent(search.trim())}`);
+                      navigate(`/search?query=${encodeURIComponent(search.trim())}`);
                       setSearch("");
                       setResults([]);
                     }
@@ -396,5 +396,6 @@ function FrontPage() {
 }
 
 export default FrontPage;
+
 
 
