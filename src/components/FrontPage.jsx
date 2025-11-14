@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./Frontpage.css";
+import "./FrontPage.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleArrowRight,
@@ -210,7 +210,7 @@ function FrontPage() {
                   onChange={handleSearch}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && search.trim().length > 2) {
-                      navigate(`/search?query=${encodeURIComponent(search.trim())}`);
+                      navigate(`/search?keyword=${encodeURIComponent(search.trim())}`);
                       setSearch("");
                       setResults([]);
                     }
@@ -267,128 +267,150 @@ function FrontPage() {
 
       {/* Informational Section */}
        <section className="content-section">
-       <div className="content-container">
+<div className="content-container">
   <div className="content-left">
-    <h2>SenpaiFlix – The best site to watch anime online for Free</h2>
+    <h2>SenpaiFlix – Your #1 Place to Watch Anime Online for Free</h2>
+
     <p>
-      Did you know that according to Google, the monthly search volume for anime-related topics exceeds over 1 billion? Anime is globally loved, and it’s no surprise that free anime streaming sites have exploded in popularity.
+      Did you know that Google reports over <strong>1 billion monthly searches</strong> related to anime? 
+      Anime has become a worldwide phenomenon, and naturally, the demand for free anime-streaming platforms 
+      has skyrocketed.
     </p>
+
     <p>
-      Similar to free movie-streaming platforms, not all anime sites are built the same—some truly stand out. That’s why we created SenpaiFlix, aiming to become one of the top free anime-streaming destinations for fans worldwide.
+      Just like with movie-streaming websites, not all anime sites offer a smooth and safe experience. 
+      That’s exactly why we built <strong>SenpaiFlix</strong> — a clean, fast, and reliable platform designed 
+      specifically for anime lovers.
     </p>
 
     <h3>1/ What is SenpaiFlix?</h3>
     <p>
-      SenpaiFlix is a free platform where you can watch and even download subbed or dubbed anime in ultra HD quality—no registration, no payments required. With minimal ads, we ensure a safe, smooth anime-watching experience.
+      SenpaiFlix is a free anime-streaming website where you can watch and download both subbed and dubbed 
+      anime in <strong>ultra-high quality</strong> — all without registration or hidden fees. With extremely 
+      minimal ads, we aim to deliver a smooth, uninterrupted viewing experience.
     </p>
 
     <h3>2/ Is SenpaiFlix safe?</h3>
     <p>
-      Yes! We use only minimal, necessary ads to cover server costs, and our system scans them 24/7 to ensure they are clean. If you ever find suspicious ads, please report them and we will remove them immediately.
+      Yes! We only use safe, necessary ads to support server costs. Our system monitors all ads 
+      <strong>24/7</strong> to ensure they are clean and secure. If you ever notice anything suspicious, 
+      report it and we’ll remove it immediately.
     </p>
 
-    <h3>3/ What makes SenpaiFlix the best place to watch free anime online?</h3>
+    <h3>3/ Why is SenpaiFlix one of the best anime-streaming platforms?</h3>
     <p>
-      Before building SenpaiFlix, we studied many anime sites closely—kept the best features and eliminated everything annoying. Here’s what makes us confident about being one of the top anime-streaming sites:
+      Before building SenpaiFlix, we analyzed dozens of anime websites. We took their best features and 
+      removed everything users complained about. Here’s why SenpaiFlix stands out:
     </p>
 
     <ul>
-      <li><strong>Safety:</strong> We work hard to ensure no harmful ads appear on SenpaiFlix.</li>
-      <li><strong>Content library:</strong> Our focus is purely anime. You’ll find popular hits, classics, and the latest releases across genres like action, fantasy, romance, school, horror, drama, comedy, music, mystery, and more—available in sub or dub.</li>
-      <li><strong>Quality/Resolution:</strong> All titles stream in excellent quality. SenpaiFlix supports multiple resolutions—from smooth 360p for slow Internet to crisp 720p and 1080p HD for a premium experience.</li>
-      <li><strong>Streaming experience:</strong> Our servers are configured for fast loading and uninterrupted streaming. Downloading episodes is also easy and reliable.</li>
-      <li><strong>Updates:</strong> New episodes and requested titles are added daily, so you’ll never run out of anime to watch.</li>
-      <li><strong>User interface:</strong> Our clean, modern UI makes navigation effortless for everyone. Search instantly, explore categories, or scroll for new releases.</li>
-      <li><strong>Device compatibility:</strong> SenpaiFlix works smoothly on both mobile and desktop. However, we recommend desktop for the best experience.</li>
-      <li><strong>Customer care:</strong> We’re active 24/7. Need help, have questions, or want to request an anime? We’re always ready to respond quickly.</li>
+      <li><strong>Safety:</strong> We work continuously to ensure harmful or misleading ads never appear.</li>
+      <li><strong>Huge anime library:</strong> From trending hits to timeless classics, we offer anime across 
+          genres like action, romance, fantasy, school life, horror, comedy, drama, music, and more — in both sub and dub.</li>
+      <li><strong>HD Streaming Quality:</strong> Enjoy smooth streaming in 360p, 480p, 720p, or full 1080p HD depending 
+          on your connection.</li>
+      <li><strong>Fast streaming servers:</strong> Our high-performance servers ensure <strong>almost zero buffering</strong>.</li>
+      <li><strong>Daily updates:</strong> New episodes, seasonal anime, and fan requests are added every single day.</li>
+      <li><strong>Clean UI:</strong> A modern, minimalistic interface designed for easy browsing and quick navigation.</li>
+      <li><strong>Cross-device compatibility:</strong> Works smoothly on both mobile and desktop (desktop recommended for best experience).</li>
+      <li><strong>24/7 customer support:</strong> Need help or want to request an anime? We're always available.</li>
     </ul>
 
     <p>
-      If you're searching for a safe and reliable anime-streaming platform, give SenpaiFlix a try. If you enjoy our service, don’t forget to bookmark the site and share it with other anime lovers.
+      If you’re looking for a safe, fast, and reliable anime-streaming platform, try SenpaiFlix today. 
+      If you enjoy the experience, don’t forget to bookmark the site and share it with other anime fans!
     </p>
 
-    <p>Thank you!</p>
+    <p>Thank you for supporting us!</p>
     <p>© SenpaiFlix. All rights reserved.</p>
   </div>
 
-  <div className="content-right">
-    <h3>Trending Posts</h3>
+<div className="content-right">
+  <h3>Trending Posts</h3>
 
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#General</span>
-        <span className="post-time">3 hours ago</span>
-        <span className="post-comments">19</span>
-      </div>
-      <div className="post-title">Can we bring this community back to its prime?</div>
-      <div className="post-author">Everyone reply with your country name;</div>
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#General</span>
+      <span className="post-time">1 hour ago</span>
+      <span className="post-comments">32</span>
     </div>
-
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#General</span>
-        <span className="post-time">4 hours ago</span>
-        <span className="post-comments">23</span>
-      </div>
-      <div className="post-title">Bye 👋👋👋</div>
-      <div className="post-author">
-        The community feels dead. The most recent active post has only around 15 comments, and most of my bros aren't even active anymore (Weeb Warrior, Cucumber Boy,…)
-      </div>
+    <div className="post-title">Solo Leveling: Arise anime event is going crazy!</div>
+    <div className="post-author">
+      The new trailer just dropped and fans are losing their minds—A-1 Pictures really went all-out this time.
+      What are your thoughts on the animation quality?
     </div>
-
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#General</span>
-        <span className="post-time">5 hours ago</span>
-        <span className="post-comments">27</span>
-      </div>
-      <div className="post-title">How to get rid of that feeling after finishing an anime?</div>
-      <div className="post-author">
-        How do you deal with that empty feeling after finishing an anime? Even if it ends happily, it feels like you’ve been thrown out of that world…
-      </div>
-    </div>
-
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#General</span>
-        <span className="post-time">6 hours ago</span>
-        <span className="post-comments">14</span>
-      </div>
-      <div className="post-title">Tencent is flexing their ultimate budget</div>
-      <div className="post-author">
-        LORD OF THE MYSTERIES WILL GET A FULL ADAPTATION—6 SEASONS AND A MOVIE! Season 2 in 2027, Season 3 in 2030, Season 4 in 2032…
-      </div>
-    </div>
-
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#Discussion</span>
-        <span className="post-time">21 hours ago</span>
-        <span className="post-comments">171</span>
-      </div>
-      <div className="post-title">
-        What’s with all the hating culture? (Counter post to “rom-coms are sh*t”)
-      </div>
-      <div className="post-author">
-        First of all, I'm not jobless—I wrote this in 5 minutes on my PC. Here’s the post I’m talking about:
-      </div>
-    </div>
-
-    <div className="post">
-      <div className="post-header">
-        <span className="post-category">#Discussion</span>
-        <span className="post-time">5 hours ago</span>
-        <span className="post-comments">42</span>
-      </div>
-      <div className="post-title">Waguri vs Sung Jin-Woo fandom</div>
-      <div className="post-author">
-        Not comparing the characters—just the fandoms. When Solo Leveling season 1 came out, Instagram was flooded with Sung Jin-Woo posts. Now it's all Waguri…
-      </div>
-    </div>
-
-    <button className="read-more-btn">Read more</button>
   </div>
+
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#Discussion</span>
+      <span className="post-time">2 hours ago</span>
+      <span className="post-comments">58</span>
+    </div>
+    <div className="post-title">Is 2025 the best anime year since 2019?</div>
+    <div className="post-author">
+      With One Punch Man S3, Chainsaw Man Movie, Blue Lock S2, and JJK S3 coming soon—this year feels stacked.
+      Which one are you hyped for the most?
+    </div>
+  </div>
+
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#General</span>
+      <span className="post-time">3 hours ago</span>
+      <span className="post-comments">21</span>
+    </div>
+    <div className="post-title">Anime recommendations for people feeling “post-series depression”?</div>
+    <div className="post-author">
+      Finished your comfort anime and now feel empty? Drop your recommendations for shows that heal, relax,
+      or pull you into a new world instantly.
+    </div>
+  </div>
+
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#News</span>
+      <span className="post-time">5 hours ago</span>
+      <span className="post-comments">47</span>
+    </div>
+    <div className="post-title">Attack on Titan: Special Edition Blu-ray leaks artwork</div>
+    <div className="post-author">
+      New exclusive illustrations featuring Eren, Levi, and Mikasa have leaked online.
+      Fans can’t stop talking about the final visual style!
+    </div>
+  </div>
+
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#Discussion</span>
+      <span className="post-time">7 hours ago</span>
+      <span className="post-comments">103</span>
+    </div>
+    <div className="post-title">Why is rom-com anime dominating again in 2025?</div>
+    <div className="post-author">
+      From “Shy Girl Next Door” to “Our Summer Melody,” rom-coms seem to be taking over again.
+      What changed? Why are people loving them more than ever?
+    </div>
+  </div>
+
+  <div className="post">
+    <div className="post-header">
+      <span className="post-category">#General</span>
+      <span className="post-time">10 hours ago</span>
+      <span className="post-comments">64</span>
+    </div>
+    <div className="post-title">Is Kagurabachi still worth the hype?</div>
+    <div className="post-author">
+      The anime adaptation is performing better than expected.
+      Do you think it deserves the memes and hype, or is it overrated?
+    </div>
+  </div>
+
+  <button className="read-more-btn">Read more</button>
 </div>
+
+</div>
+
 
       </section>
     </div>
@@ -396,6 +418,4 @@ function FrontPage() {
 }
 
 export default FrontPage;
-
-
 
