@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./FrontPage.css";
+import "./Frontpage.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleArrowRight,
@@ -418,3 +418,4 @@ function FrontPage() {
 }
 
 export default FrontPage;
+
