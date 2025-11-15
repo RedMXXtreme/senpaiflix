@@ -117,7 +117,7 @@ function FrontPage() {
     const trimmedSearch = search.trim();
     if (!trimmedSearch) return;
     const queryParam = encodeURIComponent(trimmedSearch);
-    navigate(`/search?keyword=${queryParam}`);
+    navigate(`/search?query=${queryParam}`);
   }, [search, navigate]);
 
   const handleKeyDown = useCallback(
@@ -418,4 +418,5 @@ function FrontPage() {
 }
 
 export default FrontPage;
+
 
